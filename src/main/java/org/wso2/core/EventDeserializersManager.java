@@ -11,9 +11,13 @@ import java.util.Map;
  */
 public class EventDeserializersManager {
 
-    private static Map<Class, Deserializer> deserializers = new HashMap<>();
-
     final static Logger logger = Logger.getLogger(EventDeserializersManager.class);
+
+    private final  Map<Class, Deserializer> deserializers;
+
+    public EventDeserializersManager() {
+        deserializers = new HashMap<>();
+    }
 
     /**
      *
