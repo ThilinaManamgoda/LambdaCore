@@ -1,4 +1,4 @@
-package org.wso2.core.models;
+package org.wso2.example;
 
 /**
  * Created by maanadev on 12/19/16.
