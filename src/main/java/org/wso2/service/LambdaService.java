@@ -1,12 +1,11 @@
 package org.wso2.service;
 
-import com.google.gson.JsonObject;
 import org.apache.log4j.Logger;
 import org.wso2.core.Context;
-import org.wso2.core.Deserializers.APIM_Deserializer;
+import org.wso2.core.Deserializers.APICreateEventDeserializer;
 import org.wso2.core.EventDeserializersManager;
 import org.wso2.core.RequestHandler;
-import org.wso2.core.models.APIM_Create;
+import org.wso2.core.models.APICreateEvent;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.POST;
@@ -30,7 +29,7 @@ public class LambdaService {
     @POST
     @Path("/{className}")
     @Consumes(MediaType.APPLICATION_JSON)
-    public Response runLambdaFunction(@PathParam("className") String className, JsonObject payLoad) {
+    public Response runLambdaFunction(@PathParam("className") String className, Object payLoad) {
         Class aClass = null;
         Object aClassObj = null;
 
@@ -54,8 +53,9 @@ public class LambdaService {
         return Response.ok().build();
     }
     private EventDeserializersManager getEventDeserializersManager(){
+
         EventDeserializersManager eventDeserializersManager = new EventDeserializersManager();
-        eventDeserializersManager.registerDeserializer(APIM_Create.class,new APIM_Deserializer());
+        eventDeserializersManager.registerDeserializer(APICreateEvent.class,new APICreateEventDeserializer());
         return eventDeserializersManager;
     }
 }
