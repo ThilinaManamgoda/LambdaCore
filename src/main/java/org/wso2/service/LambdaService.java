@@ -4,11 +4,8 @@ import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import org.apache.log4j.Logger;
 import org.wso2.core.Context;
-import org.wso2.core.Deserializers.APICreateEventDeserializer;
-import org.wso2.core.EventDeserializersManager;
 import org.wso2.core.LambdaServiceConstant;
 import org.wso2.core.RequestHandlerGeneric;
-import org.wso2.core.models.APICreateEvent;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.POST;
@@ -26,23 +23,30 @@ public class LambdaService {
 
     final static Logger logger = Logger.getLogger(LambdaService.class);
     final private static String LAMBDA_CLASS = System.getenv(LambdaServiceConstant.LAMBDA_CLASS_ENV);
-    final private static String LAMBDA_FUNCTION_NAME= System.getenv(LambdaServiceConstant.LAMBDA_FUNCTION_NAME_ENV);
+    final private static String LAMBDA_FUNCTION_NAME = System.getenv(LambdaServiceConstant.LAMBDA_FUNCTION_NAME_ENV);
 
+    private static Class lambdaFuncClass = getLambdaFuncClass();
 
+    private static Class getLambdaFuncClass() {
+        try {
+            lambdaFuncClass = Class.forName(LAMBDA_CLASS);
+        } catch (ClassNotFoundException e) {
+            logger.error("Cannot load the Class !", e);
+        }
+        logger.info("The class loaded successfully");
+        return lambdaFuncClass;
+    }
 
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     public Response runLambdaFunction(JsonElement payLoad) {
-        Class lambdaFuncClass = null;
         Object lambdaFuncClassObj = null;
         Class paramClass = null;
         Object response = null;
 
-        logger.info("Lambda Class: "+LAMBDA_CLASS+" Lambda Function: "+LAMBDA_FUNCTION_NAME);
+        logger.info("Lambda Class: " + LAMBDA_CLASS + " Lambda Function: " + LAMBDA_FUNCTION_NAME);
 
         try {
-            lambdaFuncClass = Class.forName(LAMBDA_CLASS);
-            logger.info("The class loaded successfully");
 
             lambdaFuncClassObj = lambdaFuncClass.newInstance();
             Method declaredMethods[] = lambdaFuncClass.getDeclaredMethods();
@@ -82,7 +86,7 @@ public class LambdaService {
             }
 
         } catch (ClassNotFoundException e) {
-            logger.error("Cannot load the Class !", e);
+            logger.error("Cannot load the Parameter Class !", e);
         } catch (InstantiationException | IllegalAccessException e) {
             logger.error("Cannot create an instance of the Class !", e);
         } catch (InvocationTargetException e) {
@@ -103,12 +107,6 @@ public class LambdaService {
         return Class.forName(method.getParameterTypes()[LambdaServiceConstant.DEFAULT_PARAM_INDEX].getTypeName());
     }
 
-    private EventDeserializersManager getEventDeserializersManager() {
-
-        EventDeserializersManager eventDeserializersManager = new EventDeserializersManager();
-        eventDeserializersManager.registerDeserializer(APICreateEvent.class, new APICreateEventDeserializer());
-        return eventDeserializersManager;
-    }
 
     private <T> T castPayload(JsonElement input, Class<T> aclass) {
 
