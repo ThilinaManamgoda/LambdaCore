@@ -1,4 +1,4 @@
-package org.wso2.service;
+package org.wso2.core.service;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;

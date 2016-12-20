@@ -1,4 +1,4 @@
-package org.wso2.service;
+package org.wso2.core.service;
 
 import org.apache.log4j.Logger;
 import org.wso2.msf4j.MicroservicesRunner;
