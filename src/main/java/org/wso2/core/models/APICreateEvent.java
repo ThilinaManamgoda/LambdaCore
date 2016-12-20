@@ -12,11 +12,11 @@ public class APICreateEvent {
     private String [] subscribers;
 
     public void setSubscribers(String[] subscribers) {
-        this.subscribers = subscribers;
+        this.subscribers = subscribers.clone();
     }
 
     public String[] getSubscribers() {
-        return subscribers;
+        return subscribers.clone();
     }
 
     public void setApiName(String apiName) {
@@ -37,11 +37,11 @@ public class APICreateEvent {
 
     @Override
     public String toString() {
-        String apim = "Api Name: "+ apiName+"\nUser: "+user+"\nsubscribers: ";
+        StringBuffer buffer = new StringBuffer("Api Name: "+ apiName+"\nUser: "+user+"\nsubscribers: ");
         for (String sub:subscribers) {
-            apim+=sub+" ";
+            buffer.append(sub+" ");
         }
-        return apim;
+        return buffer.toString();
     }
 
     public APICreateEvent(){}

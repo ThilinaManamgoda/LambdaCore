@@ -3,7 +3,7 @@ package org.wso2.example;
 /**
  * Created by maanadev on 12/19/16.
  */
-public class Input {
+public class CustomInput {
 
 
     private int num;
@@ -24,5 +24,5 @@ public class Input {
     public int getNum2() {
         return num2;
     }
-    Input(){}
+    CustomInput(){}
 }
