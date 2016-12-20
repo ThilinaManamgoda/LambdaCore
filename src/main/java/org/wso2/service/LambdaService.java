@@ -4,73 +4,69 @@ import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import org.apache.log4j.Logger;
 import org.wso2.core.Context;
-import org.wso2.core.Deserializers.APICreateEventDeserializer;
-import org.wso2.core.EventDeserializersManager;
 import org.wso2.core.LambdaServiceConstant;
-import org.wso2.core.RequestHandlerGeneric;
-import org.wso2.core.models.APICreateEvent;
+import org.wso2.core.RequestHandler;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+
 
 /**
  * Created by maanadev on 12/15/16.
  */
 @Path("/lambda")
 public class LambdaService {
-
     final static Logger logger = Logger.getLogger(LambdaService.class);
+
+
     final private static String LAMBDA_CLASS = System.getenv(LambdaServiceConstant.LAMBDA_CLASS_ENV);
-    final private static String LAMBDA_FUNCTION_NAME= System.getenv(LambdaServiceConstant.LAMBDA_FUNCTION_NAME_ENV);
+    final private static String LAMBDA_FUNCTION_NAME = System.getenv(LambdaServiceConstant.LAMBDA_FUNCTION_NAME_ENV);
 
-
+    private static Class lambdaFuncClass = getLambdaFuncClass();
 
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
     public Response runLambdaFunction(JsonElement payLoad) {
-        Class lambdaFuncClass = null;
         Object lambdaFuncClassObj = null;
         Class paramClass = null;
         Object response = null;
 
-        logger.info("Lambda Class: "+LAMBDA_CLASS+" Lambda Function: "+LAMBDA_FUNCTION_NAME);
+        logger.info("Lambda Class: " + LAMBDA_CLASS + " Lambda Function: " + LAMBDA_FUNCTION_NAME);
 
         try {
-            lambdaFuncClass = Class.forName(LAMBDA_CLASS);
-            logger.info("The class loaded successfully");
+
 
             lambdaFuncClassObj = lambdaFuncClass.newInstance();
             Method declaredMethods[] = lambdaFuncClass.getDeclaredMethods();
 
-            //TODO Create a Function for finding the correct function in the given Class
-
 
             if (LAMBDA_FUNCTION_NAME == null) {
-                for (Method method : declaredMethods) {
-
-                    if (method.getName().equals(LambdaServiceConstant.DEFAULT_METHOD_NAME)) {
-
-                        paramClass = getInputParameterClass(method);
 
 
-                        if (lambdaFuncClassObj instanceof RequestHandlerGeneric) {
+                if (lambdaFuncClassObj instanceof RequestHandler) {
 
-                            response = ((RequestHandlerGeneric) lambdaFuncClassObj).handleRequest(new Context(), castPayload(payLoad, paramClass));
-                        } else {
-                            logger.error("Class is not implemented the RequestHandler Interface !");
-                        }
+                    paramClass = getInputParameterClass(lambdaFuncClass)[0];
+                    response = ((RequestHandler) lambdaFuncClassObj).handleRequest(new Context(), castPayload(payLoad, paramClass));
+                    logger.info(response == null);
 
-                        break;
-                    }
+                } else {
+                    logger.error("Class is not implemented the RequestHandler Interface !");
+                    return Response.ok(Response.status(Response.Status.INTERNAL_SERVER_ERROR)).build();
                 }
+
+
             } else {
                 for (Method method : declaredMethods) {
-
+                    //TODO need to implement finding function logic
                     if (method.getName().equals(LAMBDA_FUNCTION_NAME)) {
 
                         paramClass = getInputParameterClass(method);
@@ -82,11 +78,14 @@ public class LambdaService {
             }
 
         } catch (ClassNotFoundException e) {
-            logger.error("Cannot load the Class !", e);
+            logger.error("Cannot load the Parameter Class !", e);
+            return Response.ok(Response.status(Response.Status.INTERNAL_SERVER_ERROR)).build();
         } catch (InstantiationException | IllegalAccessException e) {
             logger.error("Cannot create an instance of the Class !", e);
+            return Response.ok(Response.status(Response.Status.INTERNAL_SERVER_ERROR)).build();
         } catch (InvocationTargetException e) {
             logger.error("Cannot Invoke the function !", e);
+            return Response.ok(Response.status(Response.Status.INTERNAL_SERVER_ERROR)).build();
         }
 
         if (response == null) {
@@ -99,15 +98,37 @@ public class LambdaService {
 
     }
 
+    private static Class getLambdaFuncClass() {
+        Class aclass = null;
+        try {
+            aclass = Class.forName(LAMBDA_CLASS);
+        } catch (ClassNotFoundException e) {
+            logger.error("Cannot load the Lambda Function Class !", e);
+        }
+        logger.info("The class loaded successfully");
+        return aclass;
+    }
+
     private Class<?> getInputParameterClass(Method method) throws ClassNotFoundException {
+
         return Class.forName(method.getParameterTypes()[LambdaServiceConstant.DEFAULT_PARAM_INDEX].getTypeName());
     }
 
-    private EventDeserializersManager getEventDeserializersManager() {
+    private static Class<?>[] getInputParameterClass(Class aclass) throws ClassNotFoundException {
+        Class[] paramClasses = new Class[2];
+        Type[] genericInterfaces = aclass.getGenericInterfaces();
+        for (Type genericInterface : genericInterfaces) {
+            if (genericInterface instanceof ParameterizedType &&(((ParameterizedType) genericInterface).getRawType().getTypeName().equals(LambdaServiceConstant.DEFAULT_INTERFACE))) {
+                Type[] genericTypes = ((ParameterizedType) genericInterface).getActualTypeArguments();
+                int i = 0;
+                for (Type genericType : genericTypes) {
+                    paramClasses[i] = Class.forName(genericType.getTypeName());
+                    i++;
+                }
+            }
+        }
 
-        EventDeserializersManager eventDeserializersManager = new EventDeserializersManager();
-        eventDeserializersManager.registerDeserializer(APICreateEvent.class, new APICreateEventDeserializer());
-        return eventDeserializersManager;
+        return paramClasses;
     }
 
     private <T> T castPayload(JsonElement input, Class<T> aclass) {
@@ -115,33 +136,7 @@ public class LambdaService {
         Gson gson = new Gson();
         return gson.fromJson(input, aclass);
     }
-/*
 
-    public static void main(String[] args) {
-        Class aClass = null;
-        Object aClassObj = null;
-        Class paramClass = null;
 
-        try {
-            aClass = Class.forName("org.wso2.example.Customer");
-            logger.info("The class loaded successfully");
-
-            Method declaredMethods[] = aClass.getDeclaredMethods();
-            System.out.println(declaredMethods[0].getName());
-            //TODO Create a Function for finding the correct function in the given Class
-
-            // For demonstrating purpose let's think there is only one function
-          //  if(declaredMethods[0].getName().equals(methodName))
-                paramClass = Class.forName(declaredMethods[0].getParameterTypes()[1].getTypeName());
-
-            aClassObj = aClass.newInstance();
-
-        } catch (ClassNotFoundException e) {
-            logger.error("Cannot load the Class !", e);
-        } catch (InstantiationException | IllegalAccessException e) {
-            logger.error("Cannot create an instance of the Class !", e);
-        }
-
-    }*/
 }
 
