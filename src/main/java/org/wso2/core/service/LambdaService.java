@@ -4,8 +4,9 @@ import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import org.apache.log4j.Logger;
 import org.wso2.core.Context;
-import org.wso2.core.LambdaServiceConstant;
 import org.wso2.core.RequestHandler;
+import org.wso2.core.exceptions.CustomMethodParamClassNotFoundException;
+import org.wso2.core.exceptions.DefaultMethodParamClassNotFoundException;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.POST;
@@ -18,6 +19,8 @@ import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 
+import static org.wso2.core.LambdaServiceConstant.*;
+
 
 /**
  * Created by maanadev on 12/15/16.
@@ -27,8 +30,8 @@ public class LambdaService {
     final static Logger logger = Logger.getLogger(LambdaService.class);
 
 
-    final private static String LAMBDA_CLASS = System.getenv(LambdaServiceConstant.LAMBDA_CLASS_ENV);
-    final private static String LAMBDA_FUNCTION_NAME = System.getenv(LambdaServiceConstant.LAMBDA_FUNCTION_NAME_ENV);
+    final private static String LAMBDA_CLASS = System.getenv(LAMBDA_CLASS_ENV);
+    final private static String LAMBDA_FUNCTION_NAME = System.getenv(LAMBDA_FUNCTION_NAME_ENV);
 
     private static Class lambdaFuncClass = getLambdaFuncClass();
 
@@ -39,6 +42,7 @@ public class LambdaService {
         Object lambdaFuncClassObj = null;
         Class paramClass = null;
         Object response = null;
+        boolean internalServerError = false;
 
         logger.info("Lambda Class: " + LAMBDA_CLASS + " Lambda Function: " + LAMBDA_FUNCTION_NAME);
 
@@ -54,19 +58,18 @@ public class LambdaService {
 
                 if (lambdaFuncClassObj instanceof RequestHandler) {
 
-                    paramClass = getInputParameterClass(lambdaFuncClass)[0];
+                    paramClass = getInputParameterClass(lambdaFuncClass)[DEFAULT_INTERFACE_INPUT_PARAM_INDEX];
                     response = ((RequestHandler) lambdaFuncClassObj).handleRequest(new Context(), castPayload(payLoad, paramClass));
                     logger.info(response == null);
 
                 } else {
-                    logger.error("Class is not implemented the RequestHandler Interface !");
+                    logger.error(LAMBDA_CLASS + " Class is not implemented the RequestHandler Interface !");
                     return Response.ok(Response.status(Response.Status.INTERNAL_SERVER_ERROR)).build();
                 }
 
 
             } else {
                 for (Method method : declaredMethods) {
-                    //TODO need to implement finding function logic
                     if (method.getName().equals(LAMBDA_FUNCTION_NAME)) {
 
                         paramClass = getInputParameterClass(method);
@@ -77,18 +80,22 @@ public class LambdaService {
                 }
             }
 
-        } catch (ClassNotFoundException e) {
-            logger.error("Cannot load the Parameter Class !", e);
-            return Response.ok(Response.status(Response.Status.INTERNAL_SERVER_ERROR)).build();
+        } catch (CustomMethodParamClassNotFoundException e) {
+            logger.error("Couldn't load the Parameter Class of the " + LAMBDA_FUNCTION_NAME + " method input Parameter!", e);
+            internalServerError = true;
         } catch (InstantiationException | IllegalAccessException e) {
-            logger.error("Cannot create an instance of the Class !", e);
-            return Response.ok(Response.status(Response.Status.INTERNAL_SERVER_ERROR)).build();
+            logger.error("Couldn't create an instance of the Class !", e);
+            internalServerError = true;
         } catch (InvocationTargetException e) {
-            logger.error("Cannot Invoke the function !", e);
-            return Response.ok(Response.status(Response.Status.INTERNAL_SERVER_ERROR)).build();
+            logger.error("Couldn't Invoke the function !", e);
+            internalServerError = true;
+        } catch (DefaultMethodParamClassNotFoundException e) {
+            logger.error("Couldn't load the Parameter Class of the " + DEFAULT_METHOD_NAME + " method input Parameter!", e);
+            internalServerError = true;
         }
-
-        if (response == null) {
+        if (internalServerError) {
+            return Response.ok(Response.status(Response.Status.INTERNAL_SERVER_ERROR)).build();
+        } else if (response == null) {
             return Response.ok(Response.status(Response.Status.ACCEPTED)).build();
 
         } else {
@@ -103,26 +110,34 @@ public class LambdaService {
         try {
             aclass = Class.forName(LAMBDA_CLASS);
         } catch (ClassNotFoundException e) {
-            logger.error("Cannot load the Lambda Function Class !", e);
+            logger.error("Couldn't load the Lambda Function Class: " + LAMBDA_CLASS, e);
         }
-        logger.info("The class loaded successfully");
+        logger.info(LAMBDA_CLASS + " class is loaded successfully");
         return aclass;
     }
 
-    private Class<?> getInputParameterClass(Method method) throws ClassNotFoundException {
+    private Class<?> getInputParameterClass(Method method) throws CustomMethodParamClassNotFoundException {
 
-        return Class.forName(method.getParameterTypes()[LambdaServiceConstant.DEFAULT_PARAM_INDEX].getTypeName());
+        try {
+            return Class.forName(method.getParameterTypes()[CUSTOM_METHOD_INPUT_PARAM_INDEX].getTypeName());
+        } catch (ClassNotFoundException e) {
+            throw new CustomMethodParamClassNotFoundException(e);
+        }
     }
 
-    private static Class<?>[] getInputParameterClass(Class aclass) throws ClassNotFoundException {
+    private static Class<?>[] getInputParameterClass(Class aclass) throws DefaultMethodParamClassNotFoundException {
         Class[] paramClasses = new Class[2];
         Type[] genericInterfaces = aclass.getGenericInterfaces();
         for (Type genericInterface : genericInterfaces) {
-            if (genericInterface instanceof ParameterizedType &&(((ParameterizedType) genericInterface).getRawType().getTypeName().equals(LambdaServiceConstant.DEFAULT_INTERFACE))) {
+            if (genericInterface instanceof ParameterizedType ) {
                 Type[] genericTypes = ((ParameterizedType) genericInterface).getActualTypeArguments();
                 int i = 0;
                 for (Type genericType : genericTypes) {
-                    paramClasses[i] = Class.forName(genericType.getTypeName());
+                    try {
+                        paramClasses[i] = Class.forName(genericType.getTypeName());
+                    } catch (ClassNotFoundException e) {
+                        throw new DefaultMethodParamClassNotFoundException(e);
+                    }
                     i++;
                 }
             }
@@ -130,6 +145,7 @@ public class LambdaService {
 
         return paramClasses;
     }
+
 
     private <T> T castPayload(JsonElement input, Class<T> aclass) {
 
