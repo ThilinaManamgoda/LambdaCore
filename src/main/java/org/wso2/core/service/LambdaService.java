@@ -33,6 +33,7 @@ public class LambdaService {
     final private static String LAMBDA_CLASS = System.getenv(LAMBDA_CLASS_ENV);
     final private static String LAMBDA_FUNCTION_NAME = System.getenv(LAMBDA_FUNCTION_NAME_ENV);
 
+
     private static Class lambdaFuncClass = getLambdaFuncClass();
 
     @POST
@@ -55,24 +56,23 @@ public class LambdaService {
 
             if (LAMBDA_FUNCTION_NAME == null) {
 
-
                 if (lambdaFuncClassObj instanceof RequestHandler) {
 
                     paramClass = getInputParameterClass(lambdaFuncClass)[DEFAULT_INTERFACE_INPUT_PARAM_INDEX];
                     response = ((RequestHandler) lambdaFuncClassObj).handleRequest(new Context(), castPayload(payLoad, paramClass));
-                    logger.info(response == null);
 
                 } else {
                     logger.error(LAMBDA_CLASS + " Class is not implemented the RequestHandler Interface !");
-                    return Response.ok(Response.status(Response.Status.INTERNAL_SERVER_ERROR)).build();
+                    internalServerError = true;
                 }
 
 
             } else {
                 for (Method method : declaredMethods) {
-                    if (method.getName().equals(LAMBDA_FUNCTION_NAME)) {
-
-                        paramClass = getInputParameterClass(method);
+                    logger.info("validating Method: " +method.getName());
+                    if (method.getName().equals(LAMBDA_FUNCTION_NAME) && isMethodValid(method)) {
+                        logger.info(LAMBDA_FUNCTION_NAME+" method is found");
+                        paramClass = getInputParameterClass(method, CUSTOM_METHOD_INPUT_PARAM_INDEX);
 
                         response = method.invoke(lambdaFuncClassObj, new Context(), castPayload(payLoad, paramClass));
                         break;
@@ -105,6 +105,12 @@ public class LambdaService {
 
     }
 
+    private boolean isMethodValid(Method method) throws CustomMethodParamClassNotFoundException {
+        Class paramClass = getInputParameterClass(method, CONTEXT_PARAM_INDEX);
+        return paramClass == Context.class;
+    }
+
+
     private static Class getLambdaFuncClass() {
         Class aclass = null;
         try {
@@ -116,20 +122,33 @@ public class LambdaService {
         return aclass;
     }
 
-    private Class<?> getInputParameterClass(Method method) throws CustomMethodParamClassNotFoundException {
+    /**
+     * Extract the class of the parameter in a method
+     * @param method
+     * @param index index of the parameter. First parameter is 0 and so on.
+     * @return
+     * @throws CustomMethodParamClassNotFoundException
+     */
+    private Class<?> getInputParameterClass(Method method, int index) throws CustomMethodParamClassNotFoundException {
 
         try {
-            return Class.forName(method.getParameterTypes()[CUSTOM_METHOD_INPUT_PARAM_INDEX].getTypeName());
+            return Class.forName(method.getParameterTypes()[index].getTypeName());
         } catch (ClassNotFoundException e) {
             throw new CustomMethodParamClassNotFoundException(e);
         }
     }
 
+    /**
+     * Extract Class of the parameters in given Generic Interface
+     * @param aclass Default Interface class
+     * @return array of  classes of Parameters
+     * @throws DefaultMethodParamClassNotFoundException
+     */
     private static Class<?>[] getInputParameterClass(Class aclass) throws DefaultMethodParamClassNotFoundException {
-        Class[] paramClasses = new Class[2];
+        Class[] paramClasses = new Class[DEFAULT_PARAM_COUNT];
         Type[] genericInterfaces = aclass.getGenericInterfaces();
         for (Type genericInterface : genericInterfaces) {
-            if (genericInterface instanceof ParameterizedType ) {
+            if (genericInterface instanceof ParameterizedType) {
                 Type[] genericTypes = ((ParameterizedType) genericInterface).getActualTypeArguments();
                 int i = 0;
                 for (Type genericType : genericTypes) {
@@ -146,7 +165,13 @@ public class LambdaService {
         return paramClasses;
     }
 
-
+    /**
+     * Cast given json data to given Class type
+     * @param input Serialized data
+     * @param aclass The class data is to be deserialized
+     * @param <T>
+     * @return
+     */
     private <T> T castPayload(JsonElement input, Class<T> aclass) {
 
         Gson gson = new Gson();
