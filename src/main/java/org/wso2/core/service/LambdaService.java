@@ -1,3 +1,21 @@
+/*
+ *
+ *  *  Copyright (c) 2016, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
+ *  *
+ *  *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  *  you may not use this file except in compliance with the License.
+ *  *  You may obtain a copy of the License at
+ *  *
+ *  *  http://www.apache.org/licenses/LICENSE-2.0
+ *  *
+ *  *  Unless required by applicable law or agreed to in writing, software
+ *  *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  *  See the License for the specific language governing permissions and
+ *  *  limitations under the License.
+ *
+ */
+
 package org.wso2.core.service;
 
 import com.google.gson.Gson;
@@ -21,11 +39,13 @@ import java.lang.reflect.Type;
 
 import static org.wso2.core.LambdaServiceConstant.*;
 
-
 /**
- * Created by maanadev on 12/15/16.
+ * This is the microservice which handles the logic for execution of the Lambda function.
+ * At least the "LAMBDA_CLASS" environment variable  should be defined
+ *
  */
-@Path("/lambda")
+
+@Path("/")
 public class LambdaService {
     final static Logger logger = Logger.getLogger(LambdaService.class);
 
@@ -68,16 +88,13 @@ public class LambdaService {
 
 
             } else {
-                for (Method method : declaredMethods) {
-                    logger.info("validating Method: " +method.getName());
-                    if (method.getName().equals(LAMBDA_FUNCTION_NAME) && isMethodValid(method)) {
-                        logger.info(LAMBDA_FUNCTION_NAME+" method is found");
-                        paramClass = getInputParameterClass(method, CUSTOM_METHOD_INPUT_PARAM_INDEX);
 
-                        response = method.invoke(lambdaFuncClassObj, new Context(), castPayload(payLoad, paramClass));
-                        break;
-                    }
-                }
+                Method method = findLambdaMethod(declaredMethods);
+
+                paramClass = getInputParameterClass(method, CUSTOM_METHOD_INPUT_PARAM_INDEX);
+
+                response = method.invoke(lambdaFuncClassObj, new Context(), castPayload(payLoad, paramClass));
+
             }
 
         } catch (CustomMethodParamClassNotFoundException e) {
@@ -93,6 +110,7 @@ public class LambdaService {
             logger.error("Couldn't load the Parameter Class of the " + DEFAULT_METHOD_NAME + " method input Parameter!", e);
             internalServerError = true;
         }
+
         if (internalServerError) {
             return Response.ok(Response.status(Response.Status.INTERNAL_SERVER_ERROR)).build();
         } else if (response == null) {
@@ -105,12 +123,46 @@ public class LambdaService {
 
     }
 
+
+
+    /**
+     * This method is called when the LAMBDA_FUNCTION_NAME is defined. It will return the method that match the given name and the syntax[ output-type FUNCTION_NAME(org.wso2.core.Context context, input-type input)]
+     * @param declaredMethods Array of Method objects
+     * @return Method that match the given conditions
+     * @throws CustomMethodParamClassNotFoundException
+     */
+    private Method findLambdaMethod(Method[] declaredMethods) throws CustomMethodParamClassNotFoundException {
+        Method returnValue = null;
+        for (Method method : declaredMethods) {
+            logger.info("validating Method: " + method.getName());
+            if (method.getName().equals(LAMBDA_FUNCTION_NAME) && isMethodValid(method)) {
+                logger.info(LAMBDA_FUNCTION_NAME + " method is found");
+                returnValue = method;
+            }
+        }
+        return returnValue;
+    }
+
+
+    /**
+     * Check whether the first parameter of the given method is org.wso2.core.Context class type or not
+     *
+     * SYNTAX: output-type FUNCTION_NAME(org.wso2.core.Context context, input-type input)
+     *
+     * @param method Method object to be checked
+     * @return Method that match the given conditions
+     * @throws CustomMethodParamClassNotFoundException
+     */
     private boolean isMethodValid(Method method) throws CustomMethodParamClassNotFoundException {
         Class paramClass = getInputParameterClass(method, CONTEXT_PARAM_INDEX);
         return paramClass == Context.class;
     }
 
-
+    /**
+     * Load the Class which contains the Lambda Function
+     *
+     * @return
+     */
     private static Class getLambdaFuncClass() {
         Class aclass = null;
         try {
@@ -123,9 +175,10 @@ public class LambdaService {
     }
 
     /**
-     * Extract the class of the parameter in a method
+     * Extract the class of requested(index) parameter in a method
+     *
      * @param method
-     * @param index index of the parameter. First parameter is 0 and so on.
+     * @param index  index of the parameter. First parameter is 0 and so on.
      * @return
      * @throws CustomMethodParamClassNotFoundException
      */
@@ -139,7 +192,11 @@ public class LambdaService {
     }
 
     /**
-     * Extract Class of the parameters in given Generic Interface
+     * Extract the Classes of the generic parameters in a given Generic parameterized Interface
+     *
+     * HandleRequest<Integer,Double> ===> paramClasses = [Integer.class,Double.class]
+     *
+     *
      * @param aclass Default Interface class
      * @return array of  classes of Parameters
      * @throws DefaultMethodParamClassNotFoundException
@@ -167,10 +224,11 @@ public class LambdaService {
 
     /**
      * Cast given json data to given Class type
-     * @param input Serialized data
-     * @param aclass The class data is to be deserialized
+     *
+     * @param input  Serialized data
+     * @param aclass The class which data is to be deserialized
      * @param <T>
-     * @return
+     * @return aClass type object
      */
     private <T> T castPayload(JsonElement input, Class<T> aclass) {
 

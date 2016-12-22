@@ -19,6 +19,11 @@
 
 package org.wso2.core.exceptions;
 
+/**
+ * This exception is thrown when the class of Input Parameter of Custom method couldn't load
+ *
+ * LAMBDA_FUNCTION_NAME(Context context, Input input)
+ */
 public class CustomMethodParamClassNotFoundException extends Throwable {
 
 
