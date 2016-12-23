@@ -24,7 +24,7 @@ import org.apache.log4j.Logger;
 import org.wso2.core.Context;
 import org.wso2.core.RequestHandler;
 import org.wso2.core.exceptions.CustomMethodParamClassNotFoundException;
-import org.wso2.core.exceptions.DefaultMethodParamClassNotFoundException;
+import org.wso2.core.exceptions.DefaultInterfaceParamClassNotFoundException;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.POST;
@@ -36,13 +36,17 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.util.Arrays;
 
 import static org.wso2.core.LambdaServiceConstant.*;
 
 /**
  * This is the microservice which handles the logic for execution of the Lambda function.
  * At least the "LAMBDA_CLASS" environment variable  should be defined
- *
+ * Lambda Function is called via Default Interface method handleRequest or if it's custom method then via Reflection API
+ * <p>
+ * If the calling is done via Interface, Input parameter is determined through the parametrized Interface
+ * If the calling is done via custom method,  Input parameter is determined through the method object
  */
 
 @Path("/")
@@ -60,8 +64,6 @@ public class LambdaService {
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public Response runLambdaFunction(JsonElement payLoad) {
-        Object lambdaFuncClassObj = null;
-        Class paramClass = null;
         Object response = null;
         boolean internalServerError = false;
 
@@ -70,16 +72,17 @@ public class LambdaService {
         try {
 
 
-            lambdaFuncClassObj = lambdaFuncClass.newInstance();
+            Object lambdaFuncClassObj = lambdaFuncClass.newInstance();
             Method declaredMethods[] = lambdaFuncClass.getDeclaredMethods();
 
 
             if (LAMBDA_FUNCTION_NAME == null) {
 
                 if (lambdaFuncClassObj instanceof RequestHandler) {
+                    ParameterizedType defaultInterfaceParameterizedTypeObj = getDefaultInterfaceParameterizedTypeObj(lambdaFuncClass);
+                    Class paramClass = getGenericInterfaceParameterClasses(defaultInterfaceParameterizedTypeObj)[DEFAULT_INTERFACE_INPUT_PARAM_INDEX];
 
-                    paramClass = getInputParameterClass(lambdaFuncClass)[DEFAULT_INTERFACE_INPUT_PARAM_INDEX];
-                    response = ((RequestHandler) lambdaFuncClassObj).handleRequest(new Context(), castPayload(payLoad, paramClass));
+                    response = ((RequestHandler) lambdaFuncClassObj).handleRequest(new Context(), castJsonPayload(payLoad, paramClass));
 
                 } else {
                     logger.error(LAMBDA_CLASS + " Class is not implemented the RequestHandler Interface !");
@@ -91,9 +94,9 @@ public class LambdaService {
 
                 Method method = findLambdaMethod(declaredMethods);
 
-                paramClass = getInputParameterClass(method, CUSTOM_METHOD_INPUT_PARAM_INDEX);
+                Class paramClass = getMethodParamClasses(method)[CUSTOM_METHOD_INPUT_PARAM_INDEX];
 
-                response = method.invoke(lambdaFuncClassObj, new Context(), castPayload(payLoad, paramClass));
+                response = method.invoke(lambdaFuncClassObj, new Context(), castJsonPayload(payLoad, paramClass));
 
             }
 
@@ -106,7 +109,7 @@ public class LambdaService {
         } catch (InvocationTargetException e) {
             logger.error("Couldn't Invoke the function !", e);
             internalServerError = true;
-        } catch (DefaultMethodParamClassNotFoundException e) {
+        } catch (DefaultInterfaceParamClassNotFoundException e) {
             logger.error("Couldn't load the Parameter Class of the " + DEFAULT_METHOD_NAME + " method input Parameter!", e);
             internalServerError = true;
         }
@@ -123,39 +126,83 @@ public class LambdaService {
 
     }
 
-
+    /**
+     * Check whether the interface described by the argument is  org.wso2.core.RequestHandler
+     *
+     * @param parameterizedTypeInterface Interface to be validated
+     * @return
+     */
+    private boolean isDefaultInterface(ParameterizedType parameterizedTypeInterface) {
+        boolean returnVal = false;
+        try {
+            Class interfaceClass = Class.forName(parameterizedTypeInterface.getRawType().getTypeName());
+            return interfaceClass == RequestHandler.class;
+        } catch (ClassNotFoundException e) {
+            logger.error("Couldn't load the Default Interface: " + DEFAULT_INTERFACE, e);
+        }
+        return returnVal;
+    }
 
     /**
-     * This method is called when the LAMBDA_FUNCTION_NAME is defined. It will return the method that match the given name and the syntax[ output-type FUNCTION_NAME(org.wso2.core.Context context, input-type input)]
-     * @param declaredMethods Array of Method objects
-     * @return Method that match the given conditions
-     * @throws CustomMethodParamClassNotFoundException
+     * Find the Parameterized  default interface
+     *
+     * @param aclass Class which implements the org.wso2.core.RequestHandler
+     * @return
      */
-    private Method findLambdaMethod(Method[] declaredMethods) throws CustomMethodParamClassNotFoundException {
-        Method returnValue = null;
-        for (Method method : declaredMethods) {
-            logger.info("validating Method: " + method.getName());
-            if (method.getName().equals(LAMBDA_FUNCTION_NAME) && isMethodValid(method)) {
-                logger.info(LAMBDA_FUNCTION_NAME + " method is found");
-                returnValue = method;
+    private ParameterizedType getDefaultInterfaceParameterizedTypeObj(Class aclass) {
+        Type[] genericInterfaces = aclass.getGenericInterfaces();
+
+        for (Type genericInterface : genericInterfaces) {
+            if (genericInterface instanceof ParameterizedType && isDefaultInterface((ParameterizedType) genericInterface)) {
+                return (ParameterizedType) genericInterface;
             }
         }
-        return returnValue;
+        return null;
     }
 
 
     /**
-     * Check whether the first parameter of the given method is org.wso2.core.Context class type or not
+     * This method is called when the LAMBDA_FUNCTION_NAME is defined. It will return the method, which matches the given name and the syntax[ output-type FUNCTION_NAME(org.wso2.core.Context context, input-type input)]
      *
+     * @param declaredMethods Array of Method objects
+     * @return Method that match the given conditions
+     * @throws CustomMethodParamClassNotFoundException
+     */
+    private Method findLambdaMethod(Method[] declaredMethods) {
+
+        return Arrays.stream(declaredMethods)
+                .parallel()
+                .filter(method -> {
+                    logger.info("validating Method: " + method.getName());
+                    return method.getName().equals(LAMBDA_FUNCTION_NAME) && isMethodValid(method);
+                })
+                .findFirst()
+                .orElse(null);
+
+    }
+
+
+    /**
+     * Checking following conditions,
+     * --whether the first parameter of the given method is org.wso2.core.Context class type or not
+     * --Is the parameter count is equal to 2 or not
+     * <p>
      * SYNTAX: output-type FUNCTION_NAME(org.wso2.core.Context context, input-type input)
      *
      * @param method Method object to be checked
      * @return Method that match the given conditions
      * @throws CustomMethodParamClassNotFoundException
      */
-    private boolean isMethodValid(Method method) throws CustomMethodParamClassNotFoundException {
-        Class paramClass = getInputParameterClass(method, CONTEXT_PARAM_INDEX);
-        return paramClass == Context.class;
+    private boolean isMethodValid(Method method) {
+        Class paramClass = null;
+        Class[] paramClasses = null;
+        try {
+            paramClasses = getMethodParamClasses(method);
+            paramClass = paramClasses[CONTEXT_PARAM_INDEX];
+        } catch (CustomMethodParamClassNotFoundException e) {
+            logger.error("Couldn't load the Parameter Class of the " + LAMBDA_FUNCTION_NAME + " method Context Parameter!", e);
+        }
+        return (paramClasses.length == DEFAULT_PARAM_COUNT) && (paramClass == Context.class);
     }
 
     /**
@@ -175,49 +222,50 @@ public class LambdaService {
     }
 
     /**
-     * Extract the class of requested(index) parameter in a method
+     * Extract the parameter classes in a method
      *
      * @param method
-     * @param index  index of the parameter. First parameter is 0 and so on.
-     * @return
+     * @return Array of classes of the parameters
      * @throws CustomMethodParamClassNotFoundException
      */
-    private Class<?> getInputParameterClass(Method method, int index) throws CustomMethodParamClassNotFoundException {
+    private Class<?>[] getMethodParamClasses(Method method) throws CustomMethodParamClassNotFoundException {
 
-        try {
-            return Class.forName(method.getParameterTypes()[index].getTypeName());
-        } catch (ClassNotFoundException e) {
-            throw new CustomMethodParamClassNotFoundException(e);
+        int parameterCount = method.getParameterCount();
+        Class paramClass[] = new Class[parameterCount];
+        Class paramTypes[] = method.getParameterTypes();
+        for (int i = 0; i < parameterCount; i++) {
+            try {
+                paramClass[i] = Class.forName(paramTypes[i].getTypeName());
+            } catch (ClassNotFoundException e) {
+                throw new CustomMethodParamClassNotFoundException(e);
+            }
         }
+
+        return paramClass;
     }
 
     /**
      * Extract the Classes of the generic parameters in a given Generic parameterized Interface
-     *
+     * <p>
      * HandleRequest<Integer,Double> ===> paramClasses = [Integer.class,Double.class]
      *
-     *
-     * @param aclass Default Interface class
+     * @param ParameterizedTypeInterface Parameterized Default Interface Type obj
      * @return array of  classes of Parameters
-     * @throws DefaultMethodParamClassNotFoundException
+     * @throws DefaultInterfaceParamClassNotFoundException
      */
-    private static Class<?>[] getInputParameterClass(Class aclass) throws DefaultMethodParamClassNotFoundException {
+    private static Class<?>[] getGenericInterfaceParameterClasses(ParameterizedType ParameterizedTypeInterface) throws DefaultInterfaceParamClassNotFoundException {
         Class[] paramClasses = new Class[DEFAULT_PARAM_COUNT];
-        Type[] genericInterfaces = aclass.getGenericInterfaces();
-        for (Type genericInterface : genericInterfaces) {
-            if (genericInterface instanceof ParameterizedType) {
-                Type[] genericTypes = ((ParameterizedType) genericInterface).getActualTypeArguments();
-                int i = 0;
-                for (Type genericType : genericTypes) {
-                    try {
-                        paramClasses[i] = Class.forName(genericType.getTypeName());
-                    } catch (ClassNotFoundException e) {
-                        throw new DefaultMethodParamClassNotFoundException(e);
-                    }
-                    i++;
-                }
+        Type[] genericTypes = ParameterizedTypeInterface.getActualTypeArguments();
+        int i = 0;
+        for (Type genericType : genericTypes) {
+            try {
+                paramClasses[i] = Class.forName(genericType.getTypeName());
+            } catch (ClassNotFoundException e) {
+                throw new DefaultInterfaceParamClassNotFoundException(e);
             }
+            i++;
         }
+
 
         return paramClasses;
     }
@@ -230,7 +278,7 @@ public class LambdaService {
      * @param <T>
      * @return aClass type object
      */
-    private <T> T castPayload(JsonElement input, Class<T> aclass) {
+    private <T> T castJsonPayload(JsonElement input, Class<T> aclass) {
 
         Gson gson = new Gson();
         return gson.fromJson(input, aclass);

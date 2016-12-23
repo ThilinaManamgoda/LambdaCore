@@ -19,9 +19,12 @@
 
 package org.wso2.core.exceptions;
 
+/**
+ * This exception is thrown when the class of a Parameter of the Default interface method couldn't load
+ */
 
-public class DefaultMethodParamClassNotFoundException extends Throwable {
-  public DefaultMethodParamClassNotFoundException(ClassNotFoundException e) {
+public class DefaultInterfaceParamClassNotFoundException extends Throwable {
+  public DefaultInterfaceParamClassNotFoundException(ClassNotFoundException e) {
         super(e);
     }
 }
