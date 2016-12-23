@@ -80,7 +80,7 @@ public class LambdaService {
 
                 if (lambdaFuncClassObj instanceof RequestHandler) {
                     ParameterizedType defaultInterfaceParameterizedTypeObj = getDefaultInterfaceParameterizedTypeObj(lambdaFuncClass);
-                    Class paramClass = getGenericInterfaceParameterClasses(defaultInterfaceParameterizedTypeObj)[DEFAULT_INTERFACE_INPUT_PARAM_INDEX];
+                    Class paramClass = getParamClassesInGenInterface(defaultInterfaceParameterizedTypeObj)[DEFAULT_INTERFACE_INPUT_PARAM_INDEX];
 
                     response = ((RequestHandler) lambdaFuncClassObj).handleRequest(new Context(), castJsonPayload(payLoad, paramClass));
 
@@ -94,7 +94,7 @@ public class LambdaService {
 
                 Method method = findLambdaMethod(declaredMethods);
 
-                Class paramClass = getMethodParamClasses(method)[CUSTOM_METHOD_INPUT_PARAM_INDEX];
+                Class paramClass = getParamClassesInMethod(method)[CUSTOM_METHOD_INPUT_PARAM_INDEX];
 
                 response = method.invoke(lambdaFuncClassObj, new Context(), castJsonPayload(payLoad, paramClass));
 
@@ -197,7 +197,7 @@ public class LambdaService {
         Class paramClass = null;
         Class[] paramClasses = null;
         try {
-            paramClasses = getMethodParamClasses(method);
+            paramClasses = getParamClassesInMethod(method);
             paramClass = paramClasses[CONTEXT_PARAM_INDEX];
         } catch (CustomMethodParamClassNotFoundException e) {
             logger.error("Couldn't load the Parameter Class of the " + LAMBDA_FUNCTION_NAME + " method Context Parameter!", e);
@@ -228,7 +228,7 @@ public class LambdaService {
      * @return Array of classes of the parameters
      * @throws CustomMethodParamClassNotFoundException
      */
-    private Class<?>[] getMethodParamClasses(Method method) throws CustomMethodParamClassNotFoundException {
+    private Class<?>[] getParamClassesInMethod(Method method) throws CustomMethodParamClassNotFoundException {
 
         int parameterCount = method.getParameterCount();
         Class paramClass[] = new Class[parameterCount];
@@ -253,7 +253,7 @@ public class LambdaService {
      * @return array of  classes of Parameters
      * @throws DefaultInterfaceParamClassNotFoundException
      */
-    private static Class<?>[] getGenericInterfaceParameterClasses(ParameterizedType ParameterizedTypeInterface) throws DefaultInterfaceParamClassNotFoundException {
+    private static Class<?>[] getParamClassesInGenInterface(ParameterizedType ParameterizedTypeInterface) throws DefaultInterfaceParamClassNotFoundException {
         Class[] paramClasses = new Class[DEFAULT_PARAM_COUNT];
         Type[] genericTypes = ParameterizedTypeInterface.getActualTypeArguments();
         int i = 0;
