@@ -79,10 +79,10 @@ public class LambdaService {
             if (LAMBDA_FUNCTION_NAME == null) {
 
                 if (lambdaFuncClassObj instanceof RequestHandler) {
-                    ParameterizedType defaultInterfaceParameterizedTypeObj = getDefaultInterfaceParameterizedTypeObj(lambdaFuncClass);
-                    Class paramClass = getParamClassesInGenInterface(defaultInterfaceParameterizedTypeObj)[DEFAULT_INTERFACE_INPUT_PARAM_INDEX];
+                    ParameterizedType defaultInterfaceParameterizedTypeObj = findDefaultInterface(lambdaFuncClass);
+                    Class paramClass = getParamClassesInInterface(defaultInterfaceParameterizedTypeObj)[DEFAULT_INTERFACE_INPUT_PARAM_INDEX];
 
-                    response = ((RequestHandler) lambdaFuncClassObj).handleRequest(new Context(), castJsonPayload(payLoad, paramClass));
+                    response = ((RequestHandler) lambdaFuncClassObj).handleRequest(new Context(), fromJsonTo(payLoad, paramClass));
 
                 } else {
                     logger.error(LAMBDA_CLASS + " Class is not implemented the RequestHandler Interface !");
@@ -96,7 +96,7 @@ public class LambdaService {
 
                 Class paramClass = getParamClassesInMethod(method)[CUSTOM_METHOD_INPUT_PARAM_INDEX];
 
-                response = method.invoke(lambdaFuncClassObj, new Context(), castJsonPayload(payLoad, paramClass));
+                response = method.invoke(lambdaFuncClassObj, new Context(), fromJsonTo(payLoad, paramClass));
 
             }
 
@@ -135,8 +135,8 @@ public class LambdaService {
     private boolean isDefaultInterface(ParameterizedType parameterizedTypeInterface) {
         boolean returnVal = false;
         try {
-            Class interfaceClass = Class.forName(parameterizedTypeInterface.getRawType().getTypeName());
-            return interfaceClass == RequestHandler.class;
+            Class ainterface = Class.forName(parameterizedTypeInterface.getRawType().getTypeName());
+            return ainterface == RequestHandler.class;
         } catch (ClassNotFoundException e) {
             logger.error("Couldn't load the Default Interface: " + DEFAULT_INTERFACE, e);
         }
@@ -147,9 +147,9 @@ public class LambdaService {
      * Find the Parameterized  default interface
      *
      * @param aclass Class which implements the org.wso2.core.RequestHandler
-     * @return
+     * @return ParameterizedType type representation of the org.wso2.core.RequestHandler interface
      */
-    private ParameterizedType getDefaultInterfaceParameterizedTypeObj(Class aclass) {
+    private ParameterizedType findDefaultInterface(Class aclass) {
         Type[] genericInterfaces = aclass.getGenericInterfaces();
 
         for (Type genericInterface : genericInterfaces) {
@@ -253,7 +253,7 @@ public class LambdaService {
      * @return array of  classes of Parameters
      * @throws DefaultInterfaceParamClassNotFoundException
      */
-    private static Class<?>[] getParamClassesInGenInterface(ParameterizedType ParameterizedTypeInterface) throws DefaultInterfaceParamClassNotFoundException {
+    private static Class<?>[] getParamClassesInInterface(ParameterizedType ParameterizedTypeInterface) throws DefaultInterfaceParamClassNotFoundException {
         Class[] paramClasses = new Class[DEFAULT_PARAM_COUNT];
         Type[] genericTypes = ParameterizedTypeInterface.getActualTypeArguments();
         int i = 0;
@@ -278,7 +278,7 @@ public class LambdaService {
      * @param <T>
      * @return aClass type object
      */
-    private <T> T castJsonPayload(JsonElement input, Class<T> aclass) {
+    private <T> T fromJsonTo(JsonElement input, Class<T> aclass) {
 
         Gson gson = new Gson();
         return gson.fromJson(input, aclass);
