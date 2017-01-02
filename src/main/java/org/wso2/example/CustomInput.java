@@ -19,6 +19,9 @@
 
 package org.wso2.example;
 
+/**
+ * This is dummy class
+ */
 public class CustomInput {
 
 
@@ -40,5 +43,7 @@ public class CustomInput {
     public int getNum2() {
         return num2;
     }
-    CustomInput(){}
+
+    CustomInput() {
+    }
 }

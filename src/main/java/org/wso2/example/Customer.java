@@ -23,19 +23,25 @@ import org.wso2.core.Context;
 import org.wso2.core.RequestHandler;
 import org.wso2.core.models.APICreateEvent;
 
+import java.util.List;
 
-public class Customer implements RequestHandler<APICreateEvent,CustomResponse> {
+/**
+ * This class presents two ways to create Lambda function
+ *  1. Using the interface
+ *  2. User defined Function (should be matched to the prototype)
+ */
+public class Customer implements RequestHandler<List, CustomResponse> {
     @Override
-    public CustomResponse handleRequest(Context context, APICreateEvent input) {
-        System.out.println("This is from interface: \n"+input.toString());
+    public CustomResponse handleRequest(Context context, List input) {
+        System.out.println("This is from interface: \n" + input.get(0).toString());
         return null;
     }
 
 
-
-    public CustomResponse handleRequestMyWay(Context context, APICreateEvent input){
-        System.out.println("This is from custom func: \n"+ input.toString());
+    public CustomResponse handleRequestMyWay(Context context, APICreateEvent input) {
+        System.out.println("This is from custom func: \n" + input.toString());
         return null;
     }
+
 
 }

@@ -24,7 +24,7 @@ package org.wso2.core.exceptions;
  *
  * LAMBDA_FUNCTION_NAME(Context context, Input input)
  */
-public class CustomMethodParamClassNotFoundException extends Throwable {
+public class CustomMethodParamClassNotFoundException extends Exception {
 
 
     public CustomMethodParamClassNotFoundException(ClassNotFoundException e) {

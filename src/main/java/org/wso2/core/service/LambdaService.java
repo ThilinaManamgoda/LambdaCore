@@ -59,7 +59,7 @@ public class LambdaService {
 
 
     private static Class lambdaFuncClass = getLambdaFuncClass();
-
+    
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
@@ -73,14 +73,13 @@ public class LambdaService {
 
 
             Object lambdaFuncClassObj = lambdaFuncClass.newInstance();
-            Method declaredMethods[] = lambdaFuncClass.getDeclaredMethods();
 
 
             if (LAMBDA_FUNCTION_NAME == null) {
 
                 if (lambdaFuncClassObj instanceof RequestHandler) {
                     ParameterizedType defaultInterfaceParameterizedTypeObj = findDefaultInterface(lambdaFuncClass);
-                    Class paramClass = getParamClassesInInterface(defaultInterfaceParameterizedTypeObj)[DEFAULT_INTERFACE_INPUT_PARAM_INDEX];
+                    Class paramClass = getParamClassesOfInterface(defaultInterfaceParameterizedTypeObj)[DEFAULT_INTERFACE_INPUT_PARAM_INDEX];
 
                     response = ((RequestHandler) lambdaFuncClassObj).handleRequest(new Context(), fromJsonTo(payLoad, paramClass));
 
@@ -91,10 +90,11 @@ public class LambdaService {
 
 
             } else {
+                Method declaredMethods[] = lambdaFuncClass.getDeclaredMethods();
 
-                Method method = findLambdaMethod(declaredMethods);
+                Method method = findLambdaFunc(declaredMethods);
 
-                Class paramClass = getParamClassesInMethod(method)[CUSTOM_METHOD_INPUT_PARAM_INDEX];
+                Class paramClass = getParamClassesOfMethod(method)[CUSTOM_METHOD_INPUT_PARAM_INDEX];
 
                 response = method.invoke(lambdaFuncClassObj, new Context(), fromJsonTo(payLoad, paramClass));
 
@@ -168,7 +168,7 @@ public class LambdaService {
      * @return Method that match the given conditions
      * @throws CustomMethodParamClassNotFoundException
      */
-    private Method findLambdaMethod(Method[] declaredMethods) {
+    private Method findLambdaFunc(Method[] declaredMethods) {
 
         return Arrays.stream(declaredMethods)
                 .parallel()
@@ -197,7 +197,7 @@ public class LambdaService {
         Class paramClass = null;
         Class[] paramClasses = null;
         try {
-            paramClasses = getParamClassesInMethod(method);
+            paramClasses = getParamClassesOfMethod(method);
             paramClass = paramClasses[CONTEXT_PARAM_INDEX];
         } catch (CustomMethodParamClassNotFoundException e) {
             logger.error("Couldn't load the Parameter Class of the " + LAMBDA_FUNCTION_NAME + " method Context Parameter!", e);
@@ -224,11 +224,11 @@ public class LambdaService {
     /**
      * Extract the parameter classes in a method
      *
-     * @param method
+     * @param method Method object of the function
      * @return Array of classes of the parameters
      * @throws CustomMethodParamClassNotFoundException
      */
-    private Class<?>[] getParamClassesInMethod(Method method) throws CustomMethodParamClassNotFoundException {
+    private Class<?>[] getParamClassesOfMethod(Method method) throws CustomMethodParamClassNotFoundException {
 
         int parameterCount = method.getParameterCount();
         Class paramClass[] = new Class[parameterCount];
@@ -253,7 +253,7 @@ public class LambdaService {
      * @return array of  classes of Parameters
      * @throws DefaultInterfaceParamClassNotFoundException
      */
-    private static Class<?>[] getParamClassesInInterface(ParameterizedType ParameterizedTypeInterface) throws DefaultInterfaceParamClassNotFoundException {
+    private static Class<?>[] getParamClassesOfInterface(ParameterizedType ParameterizedTypeInterface) throws DefaultInterfaceParamClassNotFoundException {
         Class[] paramClasses = new Class[DEFAULT_PARAM_COUNT];
         Type[] genericTypes = ParameterizedTypeInterface.getActualTypeArguments();
         int i = 0;
@@ -274,8 +274,8 @@ public class LambdaService {
      * Cast given json data to given Class type
      *
      * @param input  Serialized data
-     * @param aclass The class which data is to be deserialized
-     * @param <T>
+     * @param aclass The class which the data is to be deserialized
+     * @param <T> The deserialized object
      * @return aClass type object
      */
     private <T> T fromJsonTo(JsonElement input, Class<T> aclass) {

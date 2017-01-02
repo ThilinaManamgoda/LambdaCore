@@ -19,5 +19,8 @@
 
 package org.wso2.example;
 
+/**
+ * This is a dummy class
+ */
 public class CustomResponse {
 }
