@@ -19,7 +19,8 @@
 
 package org.wso2.example;
 
-import org.wso2.core.models.APICreateEvent;
+
+import org.wso2.function.models.APICreateEvent;
 
 /**
  * This is a dummy class

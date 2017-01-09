@@ -21,10 +21,10 @@ package org.wso2.core.service;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import org.apache.log4j.Logger;
-import org.wso2.core.Context;
-import org.wso2.core.RequestHandler;
 import org.wso2.core.exceptions.CustomMethodParamClassNotFoundException;
 import org.wso2.core.exceptions.DefaultInterfaceParamClassNotFoundException;
+import org.wso2.function.Context;
+import org.wso2.function.RequestHandler;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.POST;
@@ -38,7 +38,7 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.Arrays;
 
-import static org.wso2.core.LambdaServiceConstant.*;
+import static org.wso2.core.service.LambdaServiceConstant.*;
 
 /**
  * This is the microservice which handles the logic for execution of the Lambda function.

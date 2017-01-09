@@ -28,6 +28,11 @@
     </parent>
 
     <dependencies>
+        <dependency>
+            <groupId>org.wso2.function</groupId>
+            <artifactId>WSO2FunctionClient</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
         <!-- Uncomment the following if you want to enable metrics & monitoring -->
         <!--
         <dependency>

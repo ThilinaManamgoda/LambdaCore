@@ -17,7 +17,7 @@
  *
  */
 
-package org.wso2.core;
+package org.wso2.core.service;
 
 /**
  *

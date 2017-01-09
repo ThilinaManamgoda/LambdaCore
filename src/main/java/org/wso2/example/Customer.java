@@ -19,9 +19,9 @@
 
 package org.wso2.example;
 
-import org.wso2.core.Context;
-import org.wso2.core.RequestHandler;
-import org.wso2.core.models.APICreateEvent;
+import org.wso2.function.Context;
+import org.wso2.function.RequestHandler;
+import org.wso2.function.models.APICreateEvent;
 
 /**
  * This class presents two ways to create Lambda function
