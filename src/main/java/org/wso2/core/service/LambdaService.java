@@ -59,7 +59,7 @@ public class LambdaService {
 
 
     private static Class lambdaFuncClass = getLambdaFuncClass();
-    
+
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)

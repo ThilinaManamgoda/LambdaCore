@@ -19,8 +19,31 @@
 
 package org.wso2.example;
 
+import org.wso2.core.models.APICreateEvent;
+
 /**
  * This is a dummy class
  */
 public class CustomResponse {
+    APICreateEvent apiCreateEvent;
+
+    String response;
+
+    public CustomResponse(){}
+
+    public void setResponse(String response) {
+        this.response = response;
+    }
+
+    public String getResponse() {
+        return response;
+    }
+
+    public void setApiCreateEvent(APICreateEvent apiCreateEvent) {
+        this.apiCreateEvent = apiCreateEvent;
+    }
+
+    public APICreateEvent getApiCreateEvent() {
+        return apiCreateEvent;
+    }
 }
