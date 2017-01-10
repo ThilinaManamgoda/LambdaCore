@@ -15,7 +15,6 @@
  *  *  limitations under the License.
  *
  */
-
 package org.wso2.core.service;
 
 import com.google.gson.Gson;
@@ -26,106 +25,21 @@ import org.wso2.core.exceptions.DefaultInterfaceParamClassNotFoundException;
 import org.wso2.function.Context;
 import org.wso2.function.RequestHandler;
 
-import javax.ws.rs.Consumes;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.Arrays;
 
-import static org.wso2.core.service.LambdaServiceConstant.*;
+import static org.wso2.core.service.LambdaService.LAMBDA_FUNCTION_NAME;
+import static org.wso2.core.service.LambdaServiceConstant.CONTEXT_PARAM_INDEX;
+import static org.wso2.core.service.LambdaServiceConstant.DEFAULT_INTERFACE;
+import static org.wso2.core.service.LambdaServiceConstant.DEFAULT_PARAM_COUNT;
 
-/**
- * This is the microservice which handles the logic for execution of the Lambda function.
- * At least the "LAMBDA_CLASS" environment variable  should be defined
- * Lambda Function is called via Default Interface method handleRequest or if it's custom method then via Reflection API
- * <p>
- * If the calling is done via Interface, Input parameter is determined through the parametrized Interface
- * If the calling is done via custom method,  Input parameter is determined through the method object
- */
+public class LambdaUtil {
 
-@Path("/")
-public class LambdaService {
-
-    final static Logger logger = Logger.getLogger(LambdaService.class);
+    final static Logger logger = Logger.getLogger(LambdaUtil.class);
 
 
-    final private static String LAMBDA_CLASS = System.getenv(LAMBDA_CLASS_ENV);
-    final public static String LAMBDA_FUNCTION_NAME = System.getenv(LAMBDA_FUNCTION_NAME_ENV);
-
-
-    private static Class lambdaFuncClass = getLambdaFuncClass();
-
-    @POST
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
-    public Response runLambdaFunction(JsonElement payLoad) {
-        Object response = null;
-        boolean internalServerError = false;
-
-        logger.info("Lambda Class: " + LAMBDA_CLASS + " Lambda Function: " + LAMBDA_FUNCTION_NAME);
-
-        try {
-
-
-            Object lambdaFuncClassObj = lambdaFuncClass.newInstance();
-
-
-            if (LAMBDA_FUNCTION_NAME == null) {
-
-                if (lambdaFuncClassObj instanceof RequestHandler) {
-                    ParameterizedType defaultInterfaceParameterizedTypeObj = findDefaultInterface(lambdaFuncClass);
-                    Class paramClass = getParamClassesOfInterface(defaultInterfaceParameterizedTypeObj)[DEFAULT_INTERFACE_INPUT_PARAM_INDEX];
-
-                    response = ((RequestHandler) lambdaFuncClassObj).handleRequest(new Context(), fromJsonTo(payLoad, paramClass));
-
-                } else {
-                    logger.error(LAMBDA_CLASS + " Class is not implemented the RequestHandler Interface !");
-                    internalServerError = true;
-                }
-
-
-            } else {
-                Method declaredMethods[] = lambdaFuncClass.getDeclaredMethods();
-
-                Method method = findLambdaFunc(declaredMethods);
-
-                Class paramClass = getParamClassesOfMethod(method)[CUSTOM_METHOD_INPUT_PARAM_INDEX];
-
-                response = method.invoke(lambdaFuncClassObj, new Context(), fromJsonTo(payLoad, paramClass));
-
-            }
-
-        } catch (CustomMethodParamClassNotFoundException e) {
-            logger.error("Couldn't load the Parameter Class of the " + LAMBDA_FUNCTION_NAME + " method input Parameter!", e);
-            internalServerError = true;
-        } catch (InstantiationException | IllegalAccessException e) {
-            logger.error("Couldn't create an instance of the Class !", e);
-            internalServerError = true;
-        } catch (InvocationTargetException e) {
-            logger.error("Couldn't Invoke the function !", e);
-            internalServerError = true;
-        } catch (DefaultInterfaceParamClassNotFoundException e) {
-            logger.error("Couldn't load the Parameter Class of the " + DEFAULT_METHOD_NAME + " method input Parameter!", e);
-            internalServerError = true;
-        }
-
-        if (internalServerError) {
-            return Response.ok(Response.status(Response.Status.INTERNAL_SERVER_ERROR)).build();
-        } else if (response == null) {
-            return Response.ok(Response.status(Response.Status.ACCEPTED)).build();
-
-        } else {
-            return Response.ok(Response.status(Response.Status.ACCEPTED)).entity(response).build();
-
-        }
-
-    }
 
     /**
      * Check whether the interface described by the argument is  org.wso2.core.RequestHandler
@@ -169,13 +83,13 @@ public class LambdaService {
      * @return Method that match the given conditions
      * @throws CustomMethodParamClassNotFoundException
      */
-    private Method findLambdaFunc(Method[] declaredMethods) {
+    private Method findLambdaFunc(Method[] declaredMethods,String funcName) {
 
         return Arrays.stream(declaredMethods)
                 .parallel()
                 .filter(method -> {
                     logger.info("validating Method: " + method.getName());
-                    return method.getName().equals(LAMBDA_FUNCTION_NAME) && isMethodValid(method);
+                    return method.getName().equals(funcName) && isMethodValid(method);
                 })
                 .findFirst()
                 .orElse(null);
@@ -206,21 +120,7 @@ public class LambdaService {
         return (paramClasses.length == DEFAULT_PARAM_COUNT) && (paramClass == Context.class);
     }
 
-    /**
-     * Load the Class which contains the Lambda Function
-     *
-     * @return
-     */
-    private static Class getLambdaFuncClass() {
-        Class aclass = null;
-        try {
-            aclass = Class.forName(LAMBDA_CLASS);
-        } catch (ClassNotFoundException e) {
-            logger.error("Couldn't load the Lambda Function Class: " + LAMBDA_CLASS, e);
-        }
-        logger.info(LAMBDA_CLASS + " class is loaded successfully");
-        return aclass;
-    }
+
 
     /**
      * Extract the parameter classes in a method
@@ -286,5 +186,5 @@ public class LambdaService {
     }
 
 
-}
 
+}
