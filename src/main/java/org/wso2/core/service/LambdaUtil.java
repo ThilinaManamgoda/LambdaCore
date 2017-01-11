@@ -20,7 +20,6 @@ package org.wso2.core.service;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import org.apache.log4j.Logger;
-import org.wso2.core.exceptions.CustomMethodParamClassNotFoundException;
 import org.wso2.core.exceptions.DefaultInterfaceParamClassNotFoundException;
 import org.wso2.function.Context;
 import org.wso2.function.RequestHandler;
@@ -30,16 +29,38 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.Arrays;
 
-import static org.wso2.core.service.LambdaService.LAMBDA_FUNCTION_NAME;
 import static org.wso2.core.service.LambdaServiceConstant.CONTEXT_PARAM_INDEX;
-import static org.wso2.core.service.LambdaServiceConstant.DEFAULT_INTERFACE;
 import static org.wso2.core.service.LambdaServiceConstant.DEFAULT_PARAM_COUNT;
 
+/**
+ * This Util class has following capabilities
+ *
+ * * Get the class when the class name is passed as a String
+ * * Check whether the provided interface is Default Interface or not
+ * * Cast Json payload to desired java object
+ * * Find default Interface in given class
+ * *
+ */
 public class LambdaUtil {
 
     final static Logger logger = Logger.getLogger(LambdaUtil.class);
 
 
+    /**
+     * Load the Class which contains the Lambda Function
+     *
+     * @return
+     */
+    public static Class getClassfromName(String className) {
+        Class aclass = null;
+        try {
+            aclass = Class.forName(className);
+        } catch (ClassNotFoundException e) {
+            logger.error("Couldn't load the Lambda Class: " + className, e);
+        }
+        logger.info(className + " class is loaded successfully");
+        return aclass;
+    }
 
     /**
      * Check whether the interface described by the argument is  org.wso2.core.RequestHandler
@@ -47,15 +68,9 @@ public class LambdaUtil {
      * @param parameterizedTypeInterface Interface to be validated
      * @return
      */
-    private boolean isDefaultInterface(ParameterizedType parameterizedTypeInterface) {
-        boolean returnVal = false;
-        try {
-            Class ainterface = Class.forName(parameterizedTypeInterface.getRawType().getTypeName());
-            return ainterface == RequestHandler.class;
-        } catch (ClassNotFoundException e) {
-            logger.error("Couldn't load the Default Interface: " + DEFAULT_INTERFACE, e);
-        }
-        return returnVal;
+    public static boolean isDefaultInterface(ParameterizedType parameterizedTypeInterface) {
+        Type ainterface = parameterizedTypeInterface.getRawType();
+        return (ainterface == RequestHandler.class);
     }
 
     /**
@@ -64,7 +79,7 @@ public class LambdaUtil {
      * @param aclass Class which implements the org.wso2.core.RequestHandler
      * @return ParameterizedType type representation of the org.wso2.core.RequestHandler interface
      */
-    private ParameterizedType findDefaultInterface(Class aclass) {
+    public static ParameterizedType findDefaultInterface(Class aclass) {
         Type[] genericInterfaces = aclass.getGenericInterfaces();
 
         for (Type genericInterface : genericInterfaces) {
@@ -79,11 +94,11 @@ public class LambdaUtil {
     /**
      * This method is called when the LAMBDA_FUNCTION_NAME is defined. It will return the method, which matches the given name and the syntax[ output-type FUNCTION_NAME(org.wso2.core.Context context, input-type input)]
      *
-     * @param declaredMethods Array of Method objects
-     * @return Method that match the given conditions
-     * @throws CustomMethodParamClassNotFoundException
+     * @param declaredMethods Array of methods
+     * @param funcName Name of the Lambda function to be found
+     * @return Desired method if it's found otherwise null
      */
-    private Method findLambdaFunc(Method[] declaredMethods,String funcName) {
+    public static Method findLambdaFunc(Method[] declaredMethods, String funcName) {
 
         return Arrays.stream(declaredMethods)
                 .parallel()
@@ -106,42 +121,31 @@ public class LambdaUtil {
      *
      * @param method Method object to be checked
      * @return Method that match the given conditions
-     * @throws CustomMethodParamClassNotFoundException
      */
-    private boolean isMethodValid(Method method) {
+    public static boolean isMethodValid(Method method) {
         Class paramClass = null;
         Class[] paramClasses = null;
-        try {
-            paramClasses = getParamClassesOfMethod(method);
-            paramClass = paramClasses[CONTEXT_PARAM_INDEX];
-        } catch (CustomMethodParamClassNotFoundException e) {
-            logger.error("Couldn't load the Parameter Class of the " + LAMBDA_FUNCTION_NAME + " method Context Parameter!", e);
-        }
+
+        paramClasses = getParamClassesOfMethod(method);
+        paramClass = paramClasses[CONTEXT_PARAM_INDEX];
+
         return (paramClasses.length == DEFAULT_PARAM_COUNT) && (paramClass == Context.class);
     }
 
 
-
     /**
-     * Extract the parameter classes in a method
+     *This method will return array of classes of parameters in the method
      *
-     * @param method Method object of the function
-     * @return Array of classes of the parameters
-     * @throws CustomMethodParamClassNotFoundException
+     * public void testMethod(String arg1, integer arg2);
+     *
+     * return=====> [String.class, Integer.class]
+     *
+     * @param method
+     * @return
      */
-    private Class<?>[] getParamClassesOfMethod(Method method) throws CustomMethodParamClassNotFoundException {
+    public static Class<?>[] getParamClassesOfMethod(Method method) {
 
-        int parameterCount = method.getParameterCount();
-        Class paramClass[] = new Class[parameterCount];
-        Class paramTypes[] = method.getParameterTypes();
-        for (int i = 0; i < parameterCount; i++) {
-            try {
-                paramClass[i] = Class.forName(paramTypes[i].getTypeName());
-            } catch (ClassNotFoundException e) {
-                throw new CustomMethodParamClassNotFoundException(e);
-            }
-        }
-
+        Class paramClass[] = method.getParameterTypes();
         return paramClass;
     }
 
@@ -154,7 +158,7 @@ public class LambdaUtil {
      * @return array of  classes of Parameters
      * @throws DefaultInterfaceParamClassNotFoundException
      */
-    private static Class<?>[] getParamClassesOfInterface(ParameterizedType ParameterizedTypeInterface) throws DefaultInterfaceParamClassNotFoundException {
+    public static Class<?>[] getParamClassesOfInterface(ParameterizedType ParameterizedTypeInterface) throws DefaultInterfaceParamClassNotFoundException {
         Class[] paramClasses = new Class[DEFAULT_PARAM_COUNT];
         Type[] genericTypes = ParameterizedTypeInterface.getActualTypeArguments();
         int i = 0;
@@ -176,15 +180,14 @@ public class LambdaUtil {
      *
      * @param input  Serialized data
      * @param aclass The class which the data is to be deserialized
-     * @param <T> The deserialized object
+     * @param <T>    The deserialized object
      * @return aClass type object
      */
-    private <T> T fromJsonTo(JsonElement input, Class<T> aclass) {
+    public static <T> T fromJsonTo(JsonElement input, Class<T> aclass) {
 
         Gson gson = new Gson();
         return gson.fromJson(input, aclass);
     }
-
 
 
 }
