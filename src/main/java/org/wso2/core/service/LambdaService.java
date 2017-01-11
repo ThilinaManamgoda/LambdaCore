@@ -20,7 +20,6 @@ package org.wso2.core.service;
 
 import com.google.gson.JsonElement;
 import org.apache.log4j.Logger;
-import org.wso2.core.util.LambdaUtil;
 import org.wso2.function.RequestHandler;
 
 import javax.ws.rs.Consumes;
@@ -35,6 +34,7 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 
 import static org.wso2.core.service.LambdaServiceConstant.*;
+import static org.wso2.core.util.LambdaUtil.*;
 
 /**
  * This is the microservice which handles the logic for execution of the Lambda function.
@@ -55,7 +55,7 @@ public class LambdaService {
     final private static String LAMBDA_FUNCTION_NAME = System.getenv(LAMBDA_FUNCTION_NAME_ENV);
 
 
-    private static Class lambdaClass = LambdaUtil.getClassfromName(LAMBDA_CLASS);
+    private static Class lambdaClass = getClassfromName(LAMBDA_CLASS);
 
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
@@ -75,11 +75,11 @@ public class LambdaService {
 
 
                 if (lambdaFuncClassObj instanceof RequestHandler) {
-                    ParameterizedType defaultInterfaceParameterizedTypeObj = LambdaUtil.findDefaultInterface(lambdaClass);
+                    ParameterizedType defaultInterfaceParameterizedTypeObj = findDefaultInterface(lambdaClass);
 
-                    Type paramType = LambdaUtil.getParamTypesOfInterface(defaultInterfaceParameterizedTypeObj)[DEFAULT_INTERFACE_INPUT_PARAM_INDEX];
+                    Type paramType =getParamTypesOfInterface(defaultInterfaceParameterizedTypeObj)[DEFAULT_INTERFACE_INPUT_PARAM_INDEX];
 
-                    response = ((RequestHandler) lambdaFuncClassObj).handleRequest(LambdaUtil.getContext(lambdaClass), LambdaUtil.fromJsonTo(payLoad, paramType));
+                    response = ((RequestHandler) lambdaFuncClassObj).handleRequest(getContext(lambdaClass), fromJsonTo(payLoad, paramType));
                 } else {
                     logger.error(LAMBDA_CLASS + " Class is not implemented the RequestHandler Interface !");
                     internalServerError = true;
@@ -89,11 +89,11 @@ public class LambdaService {
             } else {
                 Method declaredMethods[] = lambdaClass.getDeclaredMethods();
 
-                Method method = LambdaUtil.findLambdaFunc(declaredMethods,LAMBDA_FUNCTION_NAME);
+                Method method = findLambdaFunc(declaredMethods,LAMBDA_FUNCTION_NAME);
 
-                Type paramType = LambdaUtil.getParamClassesOfMethod(method)[CUSTOM_METHOD_INPUT_PARAM_INDEX];
+                Type paramType = getParamClassesOfMethod(method)[CUSTOM_METHOD_INPUT_PARAM_INDEX];
 
-                response = method.invoke(lambdaFuncClassObj, LambdaUtil.getContext(lambdaClass), LambdaUtil.fromJsonTo(payLoad, paramType));
+                response = method.invoke(lambdaFuncClassObj,getContext(lambdaClass), fromJsonTo(payLoad, paramType));
 
             }
 

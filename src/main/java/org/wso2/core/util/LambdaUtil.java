@@ -129,7 +129,12 @@ public class LambdaUtil {
         return (paramTypes.length == DEFAULT_PARAM_COUNT) && (paramType == Context.class);
     }
 
-
+    /**
+     * Extract Types of the method parameters
+     *
+     * @param method
+     * @return array of Type objects
+     */
     public static Type[] getParamClassesOfMethod(Method method) {
         Type parameterTypes[] = method.getGenericParameterTypes();
         return parameterTypes;
@@ -167,7 +172,6 @@ public class LambdaUtil {
      * @param aClass the Class the Lambda function is implemented
      * @return
      */
-
     public static Context getContext(Class aClass) {
 
         ContextImpl contextImpl = new ContextImpl(aClass);
