@@ -53,9 +53,17 @@ public class LambdaService {
 
     final private static String LAMBDA_CLASS = System.getenv(LAMBDA_CLASS_ENV);
     final private static String LAMBDA_FUNCTION_NAME = System.getenv(LAMBDA_FUNCTION_NAME_ENV);
-
-
     private static Class lambdaClass = getClassfromName(LAMBDA_CLASS);
+    private static boolean allVarsSet = false;
+    private static Type paramType = null;
+    private static Method method = null;
+
+
+    static {
+        if (!allVarsSet) {
+            setUp();
+        }
+    }
 
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
@@ -75,9 +83,6 @@ public class LambdaService {
 
 
                 if (lambdaFuncClassObj instanceof RequestHandler) {
-                    ParameterizedType defaultInterfaceParameterizedTypeObj = findDefaultInterface(lambdaClass);
-
-                    Type paramType =getParamTypesOfInterface(defaultInterfaceParameterizedTypeObj)[DEFAULT_INTERFACE_INPUT_PARAM_INDEX];
 
                     response = ((RequestHandler) lambdaFuncClassObj).handleRequest(getContext(lambdaClass), fromJsonTo(payLoad, paramType));
                 } else {
@@ -87,13 +92,8 @@ public class LambdaService {
 
 
             } else {
-                Method declaredMethods[] = lambdaClass.getDeclaredMethods();
 
-                Method method = findLambdaFunc(declaredMethods,LAMBDA_FUNCTION_NAME);
-
-                Type paramType = getParamClassesOfMethod(method)[CUSTOM_METHOD_INPUT_PARAM_INDEX];
-
-                response = method.invoke(lambdaFuncClassObj,getContext(lambdaClass), fromJsonTo(payLoad, paramType));
+                response = method.invoke(lambdaFuncClassObj, getContext(lambdaClass), fromJsonTo(payLoad, paramType));
 
             }
 
@@ -117,8 +117,26 @@ public class LambdaService {
 
     }
 
+    private static void setUp() {
+
+        if (LAMBDA_FUNCTION_NAME == null) {
+
+            ParameterizedType defaultInterfaceParameterizedTypeObj = findDefaultInterface(lambdaClass);
+
+            paramType = getParamTypesOfInterface(defaultInterfaceParameterizedTypeObj)[DEFAULT_INTERFACE_INPUT_PARAM_INDEX];
+
+        } else {
+            Method declaredMethods[] = lambdaClass.getDeclaredMethods();
+
+            method = findLambdaFunc(declaredMethods, LAMBDA_FUNCTION_NAME);
+
+            paramType = getParamClassesOfMethod(method)[CUSTOM_METHOD_INPUT_PARAM_INDEX];
 
 
+        }
+
+        allVarsSet = true;
+    }
 
 
 }
