@@ -20,7 +20,6 @@ package org.wso2.core.service;
 
 import com.google.gson.JsonElement;
 import org.apache.log4j.Logger;
-import org.wso2.core.exceptions.DefaultInterfaceParamClassNotFoundException;
 import org.wso2.core.util.LambdaUtil;
 import org.wso2.function.RequestHandler;
 
@@ -33,6 +32,7 @@ import javax.ws.rs.core.Response;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 
 import static org.wso2.core.service.LambdaServiceConstant.*;
 
@@ -76,10 +76,10 @@ public class LambdaService {
 
                 if (lambdaFuncClassObj instanceof RequestHandler) {
                     ParameterizedType defaultInterfaceParameterizedTypeObj = LambdaUtil.findDefaultInterface(lambdaClass);
-                    Class paramClass = LambdaUtil.getParamClassesOfInterface(defaultInterfaceParameterizedTypeObj)[DEFAULT_INTERFACE_INPUT_PARAM_INDEX];
 
+                    Type paramType = LambdaUtil.getParamTypesOfInterface(defaultInterfaceParameterizedTypeObj)[DEFAULT_INTERFACE_INPUT_PARAM_INDEX];
 
-                    response = ((RequestHandler) lambdaFuncClassObj).handleRequest(LambdaUtil.getContext(lambdaClass), LambdaUtil.fromJsonTo(payLoad, paramClass));
+                    response = ((RequestHandler) lambdaFuncClassObj).handleRequest(LambdaUtil.getContext(lambdaClass), LambdaUtil.fromJsonTo(payLoad, paramType));
                 } else {
                     logger.error(LAMBDA_CLASS + " Class is not implemented the RequestHandler Interface !");
                     internalServerError = true;
@@ -91,9 +91,9 @@ public class LambdaService {
 
                 Method method = LambdaUtil.findLambdaFunc(declaredMethods,LAMBDA_FUNCTION_NAME);
 
-                Class paramClass = LambdaUtil.getParamClassesOfMethod(method)[CUSTOM_METHOD_INPUT_PARAM_INDEX];
+                Type paramType = LambdaUtil.getParamClassesOfMethod(method)[CUSTOM_METHOD_INPUT_PARAM_INDEX];
 
-                response = method.invoke(lambdaFuncClassObj, LambdaUtil.getContext(lambdaClass), LambdaUtil.fromJsonTo(payLoad, paramClass));
+                response = method.invoke(lambdaFuncClassObj, LambdaUtil.getContext(lambdaClass), LambdaUtil.fromJsonTo(payLoad, paramType));
 
             }
 
@@ -103,10 +103,11 @@ public class LambdaService {
         } catch (InvocationTargetException e) {
             logger.error("Couldn't Invoke the function !", e);
             internalServerError = true;
-        } catch (DefaultInterfaceParamClassNotFoundException e) {
-            logger.error("Couldn't load the Parameter Class of the " + DEFAULT_METHOD_NAME + " method input Parameter!", e);
-            internalServerError = true;
         }
+//        } catch (DefaultInterfaceParamClassNotFoundException e) {
+//            logger.error("Couldn't load the Parameter Class of the " + DEFAULT_METHOD_NAME + " method input Parameter!", e);
+//            internalServerError = true;
+//        }
 
         if (internalServerError) {
             return Response.ok(Response.status(Response.Status.INTERNAL_SERVER_ERROR)).build();
