@@ -104,10 +104,6 @@ public class LambdaService {
             logger.error("Couldn't Invoke the function !", e);
             internalServerError = true;
         }
-//        } catch (DefaultInterfaceParamClassNotFoundException e) {
-//            logger.error("Couldn't load the Parameter Class of the " + DEFAULT_METHOD_NAME + " method input Parameter!", e);
-//            internalServerError = true;
-//        }
 
         if (internalServerError) {
             return Response.ok(Response.status(Response.Status.INTERNAL_SERVER_ERROR)).build();

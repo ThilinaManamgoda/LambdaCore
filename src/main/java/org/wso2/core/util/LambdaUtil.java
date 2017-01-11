@@ -151,19 +151,6 @@ public class LambdaUtil {
     /**
      * Cast given json data to given Class type
      *
-     * @param input  Serialized data
-     * @param aclass The class which the data is to be deserialized
-     * @return The deserialized object
-     */
-    public static <T> T fromJsonTo(JsonElement input, Class<T> aclass) {
-
-        Gson gson = new Gson();
-        return gson.fromJson(input, aclass);
-    }
-
-    /**
-     * Cast given json data to given Class type
-     *
      * @param input Serialized data
      * @param type  The Type representation of the class which the data is to be deserialized
      * @return The deserialized object
