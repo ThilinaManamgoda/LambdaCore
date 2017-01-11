@@ -15,7 +15,7 @@
  *  *  limitations under the License.
  *
  */
-package org.wso2.core.service;
+package org.wso2.core.util;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
@@ -189,5 +189,16 @@ public class LambdaUtil {
         return gson.fromJson(input, aclass);
     }
 
+    /**
+     * Construct the object Context which contains runtime info
+     * @param aClass the Class the Lambda function is implemented
+     * @return
+     */
 
+    public static Context getContext(Class aClass) {
+
+        ContextImpl contextImpl = new ContextImpl(aClass);
+        return contextImpl;
+
+    }
 }

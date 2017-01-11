@@ -21,7 +21,7 @@ package org.wso2.core.service;
 import com.google.gson.JsonElement;
 import org.apache.log4j.Logger;
 import org.wso2.core.exceptions.DefaultInterfaceParamClassNotFoundException;
-import org.wso2.function.Context;
+import org.wso2.core.util.LambdaUtil;
 import org.wso2.function.RequestHandler;
 
 import javax.ws.rs.Consumes;
@@ -79,7 +79,7 @@ public class LambdaService {
                     Class paramClass = LambdaUtil.getParamClassesOfInterface(defaultInterfaceParameterizedTypeObj)[DEFAULT_INTERFACE_INPUT_PARAM_INDEX];
 
 
-                    response = ((RequestHandler) lambdaFuncClassObj).handleRequest(new Context(), LambdaUtil.fromJsonTo(payLoad, paramClass));
+                    response = ((RequestHandler) lambdaFuncClassObj).handleRequest(LambdaUtil.getContext(lambdaClass), LambdaUtil.fromJsonTo(payLoad, paramClass));
                 } else {
                     logger.error(LAMBDA_CLASS + " Class is not implemented the RequestHandler Interface !");
                     internalServerError = true;
@@ -93,7 +93,7 @@ public class LambdaService {
 
                 Class paramClass = LambdaUtil.getParamClassesOfMethod(method)[CUSTOM_METHOD_INPUT_PARAM_INDEX];
 
-                response = method.invoke(lambdaFuncClassObj, new Context(), LambdaUtil.fromJsonTo(payLoad, paramClass));
+                response = method.invoke(lambdaFuncClassObj, LambdaUtil.getContext(lambdaClass), LambdaUtil.fromJsonTo(payLoad, paramClass));
 
             }
 
