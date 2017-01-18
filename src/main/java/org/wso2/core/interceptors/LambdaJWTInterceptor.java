@@ -41,8 +41,8 @@ public class LambdaJWTInterceptor implements Interceptor {
     private static final Logger log = LogManager.getLogger(JWTSecurityInterceptor.class);
     private static final String JWT_HEADER = "X-JWT-Assertion";
     private static final String AUTH_TYPE_JWT = "JWT";
-    private static final String KEYSTORE = "wso2.keystore";
-    private static final String ALIAS = "maanadev";
+    private static final String KEYSTORE = "wso2keystore.jks";
+    private static final String ALIAS = "apicloudsign";
     private static final String KEYSTORE_PASSWORD = "zxcvbn";
 
     @Override
@@ -77,7 +77,7 @@ public class LambdaJWTInterceptor implements Interceptor {
 
             log.info("Token has expired");
         } catch (IOException | KeyStoreException | CertificateException | NoSuchAlgorithmException | UnrecoverableKeyException | JOSEException | ParseException var4) {
-            log.error("Error occurred while JWT signature verification. JWT=" + jwt, var4);
+            log.error("Error occurred while JWT signature verification. JWT={}",jwt, var4);
         }
 
         return false;
