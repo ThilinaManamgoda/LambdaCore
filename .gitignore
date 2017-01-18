@@ -115,6 +115,7 @@ fabric.properties
 modules.xml
 .idea/misc.xml
 *.ipr
-
+#SetUpspecific
+Scripts/lambda.log
 # End of https://www.gitignore.io/api/maven,emacs,intellij+iml
 

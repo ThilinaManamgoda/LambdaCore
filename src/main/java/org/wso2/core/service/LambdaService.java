@@ -19,7 +19,8 @@
 package org.wso2.core.service;
 
 import com.google.gson.JsonElement;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.wso2.function.RequestHandler;
 
 import javax.ws.rs.Consumes;
@@ -48,12 +49,13 @@ import static org.wso2.core.util.LambdaUtil.*;
 @Path("/")
 public class LambdaService {
 
-    final static Logger logger = Logger.getLogger(LambdaService.class);
+    final static Logger logger = LogManager.getLogger(LambdaService.class);
 
 
     final private static String LAMBDA_CLASS = System.getenv(LAMBDA_CLASS_ENV);
     final private static String LAMBDA_FUNCTION_NAME = System.getenv(LAMBDA_FUNCTION_NAME_ENV);
-    private static Class lambdaClass = getClassfromName(LAMBDA_CLASS);
+    final private static boolean isLambdaFunctionNameValid = ( LAMBDA_FUNCTION_NAME == null || LAMBDA_FUNCTION_NAME.isEmpty());
+    final private static Class lambdaClass = getClassfromName(LAMBDA_CLASS);
     private static boolean allVarsSet = false;
     private static Type paramType = null;
     private static Method method = null;
@@ -71,25 +73,23 @@ public class LambdaService {
     public Response runLambdaFunction(JsonElement payLoad) {
         Object response = null;
         boolean internalServerError = false;
-        logger.info("Lambda Class: " + LAMBDA_CLASS + " Lambda Function: " + LAMBDA_FUNCTION_NAME);
-
+        logger.info("Lambda Class: {} Lambda Function: {} ",LAMBDA_CLASS,LAMBDA_FUNCTION_NAME);
         try {
 
 
             Object lambdaFuncClassObj = lambdaClass.newInstance();
 
 
-            if (LAMBDA_FUNCTION_NAME == null) {
+            if (isLambdaFunctionNameValid) {
 
 
                 if (lambdaFuncClassObj instanceof RequestHandler) {
 
                     response = ((RequestHandler) lambdaFuncClassObj).handleRequest(getContext(lambdaClass), fromJsonTo(payLoad, paramType));
                 } else {
-                    logger.error(LAMBDA_CLASS + " Class is not implemented the RequestHandler Interface !");
+                    logger.error(" {} Class is not implemented the RequestHandler Interface !",LAMBDA_CLASS);
                     internalServerError = true;
                 }
-
 
             } else {
 
@@ -98,10 +98,10 @@ public class LambdaService {
             }
 
         } catch (InstantiationException | IllegalAccessException e) {
-            logger.error("Couldn't create an instance of the Class !", e);
+            logger.error("Couldn't create an instance of the Class {}!",LAMBDA_CLASS, e);
             internalServerError = true;
         } catch (InvocationTargetException e) {
-            logger.error("Couldn't Invoke the function !", e);
+            logger.error("Couldn't Invoke the {} function !",LAMBDA_FUNCTION_NAME, e);
             internalServerError = true;
         }
 
@@ -117,9 +117,13 @@ public class LambdaService {
 
     }
 
+    /**
+     * This method is invoked only once.
+     * Initialize the static vars which are read only
+     */
     private static void setUp() {
 
-        if (LAMBDA_FUNCTION_NAME == null) {
+        if (isLambdaFunctionNameValid) {
 
             ParameterizedType defaultInterfaceParameterizedTypeObj = findDefaultInterface(lambdaClass);
 
@@ -140,4 +144,3 @@ public class LambdaService {
 
 
 }
-

@@ -19,7 +19,8 @@ package org.wso2.core.util;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.wso2.function.Context;
 import org.wso2.function.RequestHandler;
 
@@ -42,11 +43,11 @@ import static org.wso2.core.service.LambdaServiceConstant.DEFAULT_PARAM_COUNT;
  */
 public class LambdaUtil {
 
-    final static Logger logger = Logger.getLogger(LambdaUtil.class);
+    final static Logger logger = LogManager.getLogger(LambdaUtil.class);
 
 
     /**
-     * Load the Class which contains the Lambda Function
+     * Load the Class for given name
      *
      * @return
      */
@@ -55,7 +56,7 @@ public class LambdaUtil {
         try {
             aclass = Class.forName(className);
         } catch (ClassNotFoundException e) {
-            logger.error("Couldn't load the Lambda Class: " + className, e);
+            logger.error("Couldn't load the Lambda Class: {}",className, e);
         }
         logger.info(className + " class is loaded successfully");
         return aclass;
@@ -102,7 +103,7 @@ public class LambdaUtil {
         return Arrays.stream(declaredMethods)
                 .parallel()
                 .filter(method -> {
-                    logger.info("validating Method: " + method.getName());
+                    logger.info("validating Method: {}", method.getName());
                     return method.getName().equals(funcName) && isMethodValid(method);
                 })
                 .findFirst()
@@ -174,7 +175,7 @@ public class LambdaUtil {
      */
     public static Context getContext(Class aClass) {
 
-        ContextImpl contextImpl = new ContextImpl(aClass);
+        Context contextImpl = new ContextImpl(aClass);
         return contextImpl;
 
     }
