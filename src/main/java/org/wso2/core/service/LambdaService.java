@@ -54,7 +54,7 @@ public class LambdaService {
 
     final private static String LAMBDA_CLASS = System.getenv(LAMBDA_CLASS_ENV);
     final private static String LAMBDA_FUNCTION_NAME = System.getenv(LAMBDA_FUNCTION_NAME_ENV);
-    final private static boolean isLambdaFunctionNameValid = ( LAMBDA_FUNCTION_NAME == null || LAMBDA_FUNCTION_NAME.isEmpty());
+    final private static boolean isLambdaFunctionNameValid = ( LAMBDA_FUNCTION_NAME == null);
     final private static Class lambdaClass = getClassfromName(LAMBDA_CLASS);
     private static boolean allVarsSet = false;
     private static Type paramType = null;
@@ -125,9 +125,9 @@ public class LambdaService {
 
         if (isLambdaFunctionNameValid) {
 
-            ParameterizedType defaultInterfaceParameterizedTypeObj = findDefaultInterface(lambdaClass);
+            ParameterizedType defaultInterfaceParamType = findDefaultInterface(lambdaClass);
 
-            paramType = getParamTypesOfInterface(defaultInterfaceParameterizedTypeObj)[DEFAULT_INTERFACE_INPUT_PARAM_INDEX];
+            paramType = getParamTypesOfInterface(defaultInterfaceParamType)[DEFAULT_INTERFACE_INPUT_PARAM_INDEX];
 
         } else {
             Method declaredMethods[] = lambdaClass.getDeclaredMethods();

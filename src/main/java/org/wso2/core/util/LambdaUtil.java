@@ -56,7 +56,7 @@ public class LambdaUtil {
         try {
             aclass = Class.forName(className);
         } catch (ClassNotFoundException e) {
-            logger.error("Couldn't load the Lambda Class: {}",className, e);
+            logger.error("Couldn't load the Class: {}",className, e);
         }
         logger.info(className + " class is loaded successfully");
         return aclass;
@@ -114,10 +114,10 @@ public class LambdaUtil {
 
     /**
      * Checking following conditions,
-     * --whether the first parameter of the given method is org.wso2.core.Context class type or not
+     * --whether the first parameter of the given method is org.wso2.function.Context class type or not
      * --Is the parameter count is equal to 2 or not
      * <p>
-     * SYNTAX: output-type FUNCTION_NAME(org.wso2.core.Context context, input-type input)
+     * SYNTAX: output-type FUNCTION_NAME(org.wso2.function.Context context, input-type input)
      *
      * @param method Method object to be checked
      * @return Method that match the given conditions
@@ -126,7 +126,6 @@ public class LambdaUtil {
 
         Type[] paramTypes = getParamClassesOfMethod(method);
         Type paramType = paramTypes[CONTEXT_PARAM_INDEX];
-
         return (paramTypes.length == DEFAULT_PARAM_COUNT) && (paramType == Context.class);
     }
 

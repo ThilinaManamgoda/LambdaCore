@@ -48,7 +48,7 @@ public class LambdaJWTInterceptor implements Interceptor {
     @Override
     public boolean preCall(Request request, Response response, ServiceMethodInfo serviceMethodInfo) throws Exception {
         log.info("Authentication precall");
-        String jwtHeader = request.getHeader("X-JWT-Assertion");
+        String jwtHeader = request.getHeader(JWT_HEADER);
         if(jwtHeader != null) {
             boolean isValidSignature = this.verifySignature(jwtHeader);
             if(isValidSignature) {
