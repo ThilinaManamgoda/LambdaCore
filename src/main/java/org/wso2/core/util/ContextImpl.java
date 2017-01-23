@@ -19,18 +19,19 @@ package org.wso2.core.util;
 
 
 import org.wso2.function.Context;
-import org.wso2.function.LambdaLogger;
 
 public class ContextImpl implements Context {
 
-    private Class aClass;
+    private final static String funcName="TODO";
+    private final static String tenant="TODO";
 
     @Override
-    public LambdaLogger getLambdaLogger() {
-        return null;
+    public String getFunctionName() {
+        return funcName;
     }
 
-    ContextImpl(Class aclass) {
-        this.aClass = aclass;
+    @Override
+    public String getTenant() {
+        return tenant;
     }
 }

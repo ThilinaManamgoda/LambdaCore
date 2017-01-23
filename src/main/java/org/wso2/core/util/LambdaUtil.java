@@ -170,12 +170,11 @@ public class LambdaUtil {
     /**
      * Construct the object Context which contains runtime info
      *
-     * @param aClass the Class the Lambda function is implemented
      * @return
      */
-    public static Context getContext(Class aClass) {
+    public static Context getContext() {
 
-        Context contextImpl = new ContextImpl(aClass);
+        Context contextImpl = new ContextImpl();
         return contextImpl;
 
     }

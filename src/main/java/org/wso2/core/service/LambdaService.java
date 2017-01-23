@@ -85,7 +85,7 @@ public class LambdaService {
 
                 if (lambdaFuncClassObj instanceof RequestHandler) {
 
-                    response = ((RequestHandler) lambdaFuncClassObj).handleRequest(getContext(lambdaClass), fromJsonTo(payLoad, paramType));
+                    response = ((RequestHandler) lambdaFuncClassObj).handleRequest(getContext(), fromJsonTo(payLoad, paramType));
                 } else {
                     logger.error(" {} Class is not implemented the RequestHandler Interface !",LAMBDA_CLASS);
                     internalServerError = true;
@@ -93,7 +93,7 @@ public class LambdaService {
 
             } else {
 
-                response = method.invoke(lambdaFuncClassObj, getContext(lambdaClass), fromJsonTo(payLoad, paramType));
+                response = method.invoke(lambdaFuncClassObj, getContext(), fromJsonTo(payLoad, paramType));
 
             }
 
