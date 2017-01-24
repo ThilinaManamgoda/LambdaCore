@@ -21,6 +21,7 @@ package org.wso2.core.service;
 import com.google.gson.JsonElement;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.wso2.function.Context;
 import org.wso2.function.RequestHandler;
 
 import javax.ws.rs.Consumes;
@@ -54,18 +55,11 @@ public class LambdaService {
 
     final private static String LAMBDA_CLASS = System.getenv(LAMBDA_CLASS_ENV);
     final private static String LAMBDA_FUNCTION_NAME = System.getenv(LAMBDA_FUNCTION_NAME_ENV);
-    final private static boolean isLambdaFunctionNameValid = ( LAMBDA_FUNCTION_NAME == null || LAMBDA_FUNCTION_NAME.isEmpty());
-    final private static Class lambdaClass = getClassfromName(LAMBDA_CLASS);
-    private static boolean allVarsSet = false;
+    final private static boolean isLambdaFunctionNameNULL = (LAMBDA_FUNCTION_NAME == null);
+    private static Class lambdaClass = null;
     private static Type paramType = null;
     private static Method method = null;
 
-
-    static {
-        if (!allVarsSet) {
-            setUp();
-        }
-    }
 
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
@@ -73,35 +67,35 @@ public class LambdaService {
     public Response runLambdaFunction(JsonElement payLoad) {
         Object response = null;
         boolean internalServerError = false;
-        logger.info("Lambda Class: {} Lambda Function: {} ",LAMBDA_CLASS,LAMBDA_FUNCTION_NAME);
+        logger.info("Lambda Class: {} Lambda Function: {} ", LAMBDA_CLASS, LAMBDA_FUNCTION_NAME);
         try {
 
 
             Object lambdaFuncClassObj = lambdaClass.newInstance();
+            Context context = getContext();
 
-
-            if (isLambdaFunctionNameValid) {
+            if (isLambdaFunctionNameNULL) {
 
 
                 if (lambdaFuncClassObj instanceof RequestHandler) {
 
-                    response = ((RequestHandler) lambdaFuncClassObj).handleRequest(getContext(), fromJsonTo(payLoad, paramType));
+                    response = ((RequestHandler) lambdaFuncClassObj).handleRequest(context, fromJsonTo(payLoad, paramType));
                 } else {
-                    logger.error(" {} Class is not implemented the RequestHandler Interface !",LAMBDA_CLASS);
+                    logger.error(" {} Class is not implemented the RequestHandler Interface !", LAMBDA_CLASS);
                     internalServerError = true;
                 }
 
             } else {
 
-                response = method.invoke(lambdaFuncClassObj, getContext(), fromJsonTo(payLoad, paramType));
+                response = method.invoke(lambdaFuncClassObj, context, fromJsonTo(payLoad, paramType));
 
             }
 
         } catch (InstantiationException | IllegalAccessException e) {
-            logger.error("Couldn't create an instance of the Class {}!",LAMBDA_CLASS, e);
+            logger.error("Couldn't create an instance of the Class {}!", LAMBDA_CLASS, e);
             internalServerError = true;
         } catch (InvocationTargetException e) {
-            logger.error("Couldn't Invoke the {} function !",LAMBDA_FUNCTION_NAME, e);
+            logger.error("Couldn't Invoke the {} function !", LAMBDA_FUNCTION_NAME, e);
             internalServerError = true;
         }
 
@@ -117,30 +111,27 @@ public class LambdaService {
 
     }
 
-    /**
-     * This method is invoked only once.
-     * Initialize the static vars which are read only
-     */
-    private static void setUp() {
+    static {
 
-        if (isLambdaFunctionNameValid) {
+            lambdaClass = getClassfromName(LAMBDA_CLASS);
 
-            ParameterizedType defaultInterfaceParameterizedTypeObj = findDefaultInterface(lambdaClass);
+            if (isLambdaFunctionNameNULL) {
 
-            paramType = getParamTypesOfInterface(defaultInterfaceParameterizedTypeObj)[DEFAULT_INTERFACE_INPUT_PARAM_INDEX];
+                ParameterizedType defaultInterfaceParameterizedTypeObj = findDefaultInterface(lambdaClass);
 
-        } else {
-            Method declaredMethods[] = lambdaClass.getDeclaredMethods();
+                paramType = getParamTypesOfInterface(defaultInterfaceParameterizedTypeObj)[DEFAULT_INTERFACE_INPUT_PARAM_INDEX];
 
-            method = findLambdaFunc(declaredMethods, LAMBDA_FUNCTION_NAME);
+            } else {
+                Method declaredMethods[] = lambdaClass.getDeclaredMethods();
 
-            paramType = getParamClassesOfMethod(method)[CUSTOM_METHOD_INPUT_PARAM_INDEX];
+                method = findLambdaFunc(declaredMethods, LAMBDA_FUNCTION_NAME);
+
+                paramType = getParamClassesOfMethod(method)[CUSTOM_METHOD_INPUT_PARAM_INDEX];
 
 
-        }
+            }
 
-        allVarsSet = true;
+
     }
-
 
 }

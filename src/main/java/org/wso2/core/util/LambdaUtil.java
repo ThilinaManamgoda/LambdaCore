@@ -92,7 +92,7 @@ public class LambdaUtil {
 
 
     /**
-     * This method is called when the LAMBDA_FUNCTION_NAME is defined. It will return the method, which matches the given name and the syntax[ output-type FUNCTION_NAME(org.wso2.core.Context context, input-type input)]
+     * This method is called when the LAMBDA_FUNCTION_NAME is defined. It will return the method, which matches the given name and the syntax[ output-type FUNCTION_NAME(org.wso2.function.Context context, input-type input)]
      *
      * @param declaredMethods Array of methods
      * @param funcName        Name of the Lambda function to be found
@@ -158,13 +158,13 @@ public class LambdaUtil {
      * Cast given json data to given Class type
      *
      * @param input Serialized data
-     * @param type  The Type representation of the class which the data is to be deserialized
+     * @param typeOfT  The Type representation of the class which the data is to be deserialized
      * @return The deserialized object
      */
-    public static <T> T fromJsonTo(JsonElement input, Type type) {
+    public static <T> T fromJsonTo(JsonElement input, Type typeOfT) {
 
         Gson gson = new Gson();
-        return gson.fromJson(input, type);
+        return gson.fromJson(input, typeOfT);
     }
 
     /**
