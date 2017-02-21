@@ -58,7 +58,7 @@ public class LambdaUtil {
         } catch (ClassNotFoundException e) {
             logger.error("Couldn't load the Lambda Class: {}",className, e);
         }
-        logger.info(className + " class is loaded successfully");
+
         return aclass;
     }
 
@@ -161,21 +161,11 @@ public class LambdaUtil {
      * @param typeOfT  The Type representation of the class which the data is to be deserialized
      * @return The deserialized object
      */
-    public static <T> T fromJsonTo(JsonElement input, Type typeOfT) {
+    public static Object fromJsonTo(JsonElement input, Type typeOfT) {
 
         Gson gson = new Gson();
         return gson.fromJson(input, typeOfT);
     }
 
-    /**
-     * Construct the object Context which contains runtime info
-     *
-     * @return
-     */
-    public static Context getContext() {
 
-        Context contextImpl = new ContextImpl();
-        return contextImpl;
-
-    }
 }

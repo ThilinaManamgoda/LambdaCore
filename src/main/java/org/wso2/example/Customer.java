@@ -25,25 +25,24 @@ import org.wso2.function.models.APICreateEvent;
 
 /**
  * This class presents two ways to create Lambda function
- *  1. Using the interface
- *  2. User defined Function (should be matched to the prototype)
+ * 1. Using the interface
+ * 2. User defined Function (should be matched to the prototype)
  */
 public class Customer implements RequestHandler<APICreateEvent, CustomResponse> {
     @Override
     public CustomResponse handleRequest(Context context, APICreateEvent input) {
-        System.out.println("This is from interface: \n" + input);
         CustomResponse customResponse = new CustomResponse();
         customResponse.setApiCreateEvent(input);
-        customResponse.setResponse("Lambda function works!");
-        return customResponse   ;
+        customResponse.setResponse("Lambda function works!: "+context.getEvent()+" "+context.getFunctionName()+" "+ context.getTenant());
+        return customResponse;
     }
 
 
-        public CustomResponse handleRequestMyWay(Context context, APICreateEvent input) {
+    public CustomResponse handleRequestMyWay(Context context, APICreateEvent input) {
         CustomResponse customResponse = new CustomResponse();
         customResponse.setApiCreateEvent(input);
         customResponse.setResponse("Lambda function works via custom function!");
-        return customResponse   ;
+        return customResponse;
     }
 
 

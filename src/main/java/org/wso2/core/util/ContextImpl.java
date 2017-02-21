@@ -20,18 +20,40 @@ package org.wso2.core.util;
 
 import org.wso2.function.Context;
 
+import static org.wso2.core.service.LambdaServiceConstant.LAMBDA_APPLICATION_NAME;
+import static org.wso2.core.service.LambdaServiceConstant.LAMBDA_EVENT;
+import static org.wso2.core.service.LambdaServiceConstant.TENANT;
+
 public class ContextImpl implements Context {
 
-    private final static String funcName="TODO";
-    private final static String tenant="TODO";
+    private final static String VAL_LAMBDA_APPLICATION_NAME = System.getenv(LAMBDA_APPLICATION_NAME);
+    private final static String VAL_LAMBDA_EVENT = System.getenv(LAMBDA_EVENT);
+    private final static String VAL_TENANT = System.getenv(TENANT);
+    private static Context contextImpl;
 
+    /**
+     * Construct the object Context which contains runtime info
+     *
+     * @return
+     */
+    public static Context getContext() {
+        if(contextImpl == null){
+            contextImpl = new ContextImpl();
+        }
+        return contextImpl;
+    }
     @Override
     public String getFunctionName() {
-        return funcName;
+        return VAL_LAMBDA_APPLICATION_NAME;
     }
 
     @Override
     public String getTenant() {
-        return tenant;
+        return VAL_TENANT;
+    }
+
+    @Override
+    public String getEvent() {
+        return VAL_LAMBDA_EVENT;
     }
 }
