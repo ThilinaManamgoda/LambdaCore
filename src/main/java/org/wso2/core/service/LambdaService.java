@@ -24,7 +24,10 @@ import org.apache.logging.log4j.Logger;
 import org.wso2.function.Context;
 import org.wso2.function.RequestHandler;
 
-import javax.ws.rs.*;
+import javax.ws.rs.Consumes;
+import javax.ws.rs.POST;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.lang.reflect.InvocationTargetException;
@@ -53,8 +56,8 @@ public class LambdaService {
     private static Class lambdaClass = null;
     private static Type paramType = null;
     private static Method method = null;
-    final private static String LAMBDA_CLASS = System.getenv(LAMBDA_CLASS_ENV);
-    final private static String LAMBDA_FUNCTION_NAME = System.getenv(LAMBDA_FUNCTION_NAME_ENV);
+    final private static String LAMBDA_CLASS = System.getenv(LambdaServiceConstant.LAMBDA_CLASS);
+    final private static String LAMBDA_FUNCTION_NAME = System.getenv(LambdaServiceConstant.LAMBDA_FUNCTION_NAME);
     final private static boolean isLambdaFunctionNameNULL = (LAMBDA_FUNCTION_NAME == null);
 
 

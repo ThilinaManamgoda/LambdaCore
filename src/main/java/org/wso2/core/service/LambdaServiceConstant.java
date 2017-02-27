@@ -25,8 +25,8 @@ package org.wso2.core.service;
 
 final public class LambdaServiceConstant {
     public static final String DEFAULT_METHOD_NAME = "handleRequest";
-    public static final String LAMBDA_CLASS_ENV = "LAMBDA_CLASS";
-    public static final String LAMBDA_FUNCTION_NAME_ENV = "LAMBDA_FUNCTION_NAME";
+    public static final String LAMBDA_CLASS = "LAMBDA_CLASS";
+    public static final String LAMBDA_FUNCTION_NAME = "LAMBDA_FUNCTION_NAME";
     public static final int CUSTOM_METHOD_INPUT_PARAM_INDEX = 1;
     public static final String DEFAULT_INTERFACE = "org.wso2.core.RequestHandler";
     public static final String LAMBDA_EVENT = "LAMBDA_EVENT";
