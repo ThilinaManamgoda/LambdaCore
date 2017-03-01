@@ -21,13 +21,11 @@ package org.wso2.core.util;
 import org.wso2.function.Context;
 
 import static org.wso2.core.service.LambdaServiceConstant.LAMBDA_APPLICATION_NAME;
-import static org.wso2.core.service.LambdaServiceConstant.LAMBDA_EVENT;
 import static org.wso2.core.service.LambdaServiceConstant.TENANT;
 
 public class ContextImpl implements Context {
 
     private final static String VAL_LAMBDA_APPLICATION_NAME = System.getenv(LAMBDA_APPLICATION_NAME);
-    private final static String VAL_LAMBDA_EVENT = System.getenv(LAMBDA_EVENT);
     private final static String VAL_TENANT = System.getenv(TENANT);
     private static Context contextImpl;
 
@@ -52,8 +50,5 @@ public class ContextImpl implements Context {
         return VAL_TENANT;
     }
 
-    @Override
-    public String getEvent() {
-        return VAL_LAMBDA_EVENT;
-    }
+
 }

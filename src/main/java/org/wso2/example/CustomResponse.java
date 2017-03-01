@@ -20,13 +20,13 @@
 package org.wso2.example;
 
 
-import org.wso2.function.models.APICreateEvent;
+import org.wso2.function.models.API_CREATION;
 
 /**
  * This is a dummy class
  */
 public class CustomResponse {
-    APICreateEvent apiCreateEvent;
+    API_CREATION apiCreateEvent;
 
     String response;
 
@@ -40,11 +40,11 @@ public class CustomResponse {
         return response;
     }
 
-    public void setApiCreateEvent(APICreateEvent apiCreateEvent) {
+    public void setApiCreateEvent(API_CREATION apiCreateEvent) {
         this.apiCreateEvent = apiCreateEvent;
     }
 
-    public APICreateEvent getApiCreateEvent() {
+    public API_CREATION getApiCreateEvent() {
         return apiCreateEvent;
     }
 }

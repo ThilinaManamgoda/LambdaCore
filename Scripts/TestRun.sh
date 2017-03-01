@@ -1,3 +1,4 @@
+
 #!/usr/bin/env bash
 export LAMBDA_CLASS=org.wso2.impl.LambdaApp
 export LAMBDA_APPLICATION_NAME=testing
