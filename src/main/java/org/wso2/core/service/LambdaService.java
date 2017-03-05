@@ -110,8 +110,6 @@ public class LambdaService {
         lambdaClass = getClassfromName(LAMBDA_CLASS);
         if (lambdaClass != null) {
             logger.info("{} class is loaded successfully", LAMBDA_CLASS);
-        }
-        if (lambdaClass != null) {
             if (isLambdaFunctionNameNULL) {
 
                 ParameterizedType defaultInterfaceParameterizedTypeObj = findDefaultInterface(lambdaClass);
