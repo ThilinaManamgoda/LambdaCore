@@ -109,25 +109,25 @@ public class LambdaService {
 
         lambdaClass = getClassfromName(LAMBDA_CLASS);
         if (lambdaClass != null) {
-            logger.info("{} class is loaded successfully",LAMBDA_CLASS);
+            logger.info("{} class is loaded successfully", LAMBDA_CLASS);
         }
+        if (lambdaClass != null) {
+            if (isLambdaFunctionNameNULL) {
 
-        if (isLambdaFunctionNameNULL) {
+                ParameterizedType defaultInterfaceParameterizedTypeObj = findDefaultInterface(lambdaClass);
 
-            ParameterizedType defaultInterfaceParameterizedTypeObj = findDefaultInterface(lambdaClass);
+                paramType = getParamTypesOfInterface(defaultInterfaceParameterizedTypeObj)[DEFAULT_INTERFACE_INPUT_PARAM_INDEX];
 
-            paramType = getParamTypesOfInterface(defaultInterfaceParameterizedTypeObj)[DEFAULT_INTERFACE_INPUT_PARAM_INDEX];
+            } else {
+                Method declaredMethods[] = lambdaClass.getDeclaredMethods();
 
-        } else {
-            Method declaredMethods[] = lambdaClass.getDeclaredMethods();
+                method = findLambdaFunc(declaredMethods, LAMBDA_FUNCTION_NAME);
 
-            method = findLambdaFunc(declaredMethods, LAMBDA_FUNCTION_NAME);
+                paramType = getParamClassesOfMethod(method)[CUSTOM_METHOD_INPUT_PARAM_INDEX];
 
-            paramType = getParamClassesOfMethod(method)[CUSTOM_METHOD_INPUT_PARAM_INDEX];
 
+            }
 
         }
-
-
     }
 }
